@@ -4,9 +4,9 @@ featureBranch: "feat-123"
 vdb:
   name: "feat-123-vdb"
   database:
-    name: "feat_123_app"
-    user: "feat_123_user"
-    password: "feat_123_password"
+    name: "postgres"
+    user: "postgres"
+    password: "Delphix_123!"
   
   resources:
     requests:
@@ -104,7 +104,7 @@ vdb:
   hooks:
     - name: "init-feat-schema"
       stage: "post-create"
-      database: "feat_123_app"
+      database: "sampledb"
       script: |
         -- Create feature-specific schemas
         CREATE SCHEMA IF NOT EXISTS feat_123_experimental;

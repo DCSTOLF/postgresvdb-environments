@@ -3,9 +3,9 @@ environment: dev
 vdb:
   name: "dev-vdb"
   database:
-    name: "dev_application"
-    user: "dev_user"
-    password: "dev_password_123"
+    name: "postgres"
+    user: "postgres"
+    password: "Delphix_123!"
   resources:
     requests:
       memory: "1Gi"
@@ -102,7 +102,7 @@ vdb:
   hooks:
     - name: "init-dev-schema"
       stage: "post-create"
-      database: "dev_application"
+      database: "sampledb"
       script: |
         -- Create development schemas
         CREATE SCHEMA IF NOT EXISTS dev_features;

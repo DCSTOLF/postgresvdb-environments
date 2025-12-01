@@ -3,9 +3,9 @@ environment: qa
 vdb:
   name: "qa-vdb"
   database:
-    name: "qa_application"
-    user: "qa_user"
-    password: "qa_password_123"
+    name: "postgres"
+    user: "postgres"
+    password: "Delphix_123!"
   resources:
     requests:
       memory: "2Gi"
@@ -17,7 +17,7 @@ vdb:
   hooks:
     - name: "init-qa-schema"
       stage: "post-create"
-      database: "qa_application"
+      database: "sampledb"
       script: |
         -- Create QA schemas
         CREATE SCHEMA IF NOT EXISTS qa_testing;
