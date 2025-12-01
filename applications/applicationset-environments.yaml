@@ -11,7 +11,7 @@ spec:
   
   generators:
   - git:
-      repoURL: https://github.com/your-org/vdb-platform.git
+      repoURL: https://github.com/DCSTOLF/postgresvdb-environments.git
       revision: main
       files:
       - path: "environments/values-*.yaml"
@@ -35,7 +35,7 @@ spec:
       project: default
       
       source:
-        repoURL: https://github.com/your-org/vdb-platform.git
+        repoURL: https://github.com/DCSTOLF/postgresvdb-environments.git
         targetRevision: main
         path: charts/postgres-vdb
         helm:

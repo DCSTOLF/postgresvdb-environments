@@ -11,7 +11,7 @@ spec:
   project: default
   
   source:
-    repoURL: https://github.com/your-org/vdb-platform.git
+    repoURL: https://github.com/DCSTOLF/postgresvdb-environments.git
     targetRevision: main
     path: applications
     directory:

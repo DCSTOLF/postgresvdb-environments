@@ -776,7 +776,3 @@ For issues and questions:
 2. Review ArgoCD application sync status
 3. Consult the PostgresVDB operator documentation
 4. Open issues in the project repository
-
----
-
-This README provides complete setup instructions and examples to bootstrap your PostgreSQL VDB environment management system using ArgoCD and Helm.
