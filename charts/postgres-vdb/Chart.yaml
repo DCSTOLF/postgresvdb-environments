@@ -1,0 +1,21 @@
+apiVersion: v2
+name: postgres-vdb
+description: Dynamic PostgreSQL VDB Environments managed by Delphix
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+
+keywords:
+  - postgres
+  - postgresql
+  - database
+  - vdb
+  - delphix
+
+maintainers:
+  - name: Delphix Team
+    email: support@delphix.com
+
+annotations:
+  helm.sh/hook-weight: "-5"
+  category: Database

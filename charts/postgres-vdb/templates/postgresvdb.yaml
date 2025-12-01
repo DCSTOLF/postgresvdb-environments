@@ -1,0 +1,60 @@
+{{- if .Values.vdb.enabled }}
+apiVersion: core.delphix.com/v1alpha1
+kind: PostgresVDB
+metadata:
+  name: {{ .Values.vdb.name | default .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "postgres-vdb.labels" . | nindent 4 }}
+    environment: {{ .Values.environment | default "development" }}
+    {{- if .Values.featureBranch }}
+    feature-branch: {{ .Values.featureBranch }}
+    {{- end }}
+  annotations:
+    "argocd.argoproj.io/sync-wave": "{{ .Values.syncWave | default "0" }}"
+    "helm.sh/resource-policy": keep
+spec:
+  source:
+    type: dct-source
+    reference: {{ .Values.global.sourceDatabase | quote }}
+  port: {{ .Values.vdb.port }}
+  image: {{ .Values.global.postgresImage | quote }}
+  mountPath: {{ .Values.vdb.mountPath | quote }}
+  ownershipSpec: {{ .Values.vdb.ownershipSpec | quote }}
+  mode: {{ .Values.vdb.mode | quote }}
+  errorBackoffPeriod: {{ .Values.vdb.errorBackoffPeriod | quote }}
+  enabled: {{ .Values.vdb.enabled }}
+  
+  {{- if .Values.vdb.database }}
+  database:
+    name: {{ .Values.vdb.database.name | quote }}
+    user: {{ .Values.vdb.database.user | quote }}
+    password: {{ .Values.vdb.database.password | quote }}
+  {{- end }}
+  
+  {{- if .Values.vdb.resources }}
+  resources:
+    requests:
+      memory: {{ .Values.vdb.resources.requests.memory | quote }}
+      cpu: {{ .Values.vdb.resources.requests.cpu | quote }}
+    {{- if .Values.vdb.resources.limits }}
+    limits:
+      memory: {{ .Values.vdb.resources.limits.memory | quote }}
+      cpu: {{ .Values.vdb.resources.limits.cpu | quote }}
+    {{- end }}
+  {{- end }}
+  
+  {{- if .Values.vdb.postgresConfig }}
+  postgresConfig:
+    {{- toYaml .Values.vdb.postgresConfig | nindent 4 }}
+  {{- end }}
+  
+  {{- if .Values.vdb.hooks }}
+  hooks:
+    {{- toYaml .Values.vdb.hooks | nindent 4 }}
+  {{- end }}
+  
+  {{- if .Values.global.storageClass }}
+  storageClass: {{ .Values.global.storageClass | quote }}
+  {{- end }}
+{{- end }}

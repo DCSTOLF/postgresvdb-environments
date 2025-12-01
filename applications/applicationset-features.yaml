@@ -1,0 +1,87 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: postgres-vdb-features
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  
+  generators:
+  - git:
+      repoURL: https://github.com/your-org/vdb-platform.git
+      revision: main
+      files:
+      - path: "environments/features/values-*.yaml"
+  
+  template:
+    metadata:
+      name: "postgres-vdb-{{.path.basenameNormalized}}"
+      namespace: argocd
+      labels:
+        app.kubernetes.io/name: postgres-vdb
+        app.kubernetes.io/instance: "{{.path.basenameNormalized}}"
+        app.kubernetes.io/part-of: postgres-vdb-platform
+        environment: feature
+        feature-branch: "{{.path.basenameNormalized}}"
+      annotations:
+        argocd.argoproj.io/sync-wave: "2"
+        notifications.argoproj.io/subscribe.on-sync-succeeded.slack: "feature-vdb-alerts"
+        notifications.argoproj.io/subscribe.on-sync-failed.slack: "feature-vdb-alerts"
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    
+    spec:
+      project: features  # Can be 'default' if 'features' project doesn't exist
+      
+      source:
+        repoURL: https://github.com/your-org/vdb-platform.git
+        targetRevision: main
+        path: charts/postgres-vdb
+        helm:
+          releaseName: "{{.path.basenameNormalized}}-vdb"
+          valueFiles:
+          - "../../environments/features/values-{{.path.basename}}.yaml"
+          parameters:
+          - name: environment
+            value: "feature"
+          - name: featureBranch
+            value: "{{.path.basenameNormalized}}"
+      
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "postgres-vdbs-feature-{{.path.basenameNormalized}}"
+      
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: false  # Manual control for feature branches
+          allowEmpty: false
+        syncOptions:
+        - CreateNamespace=true
+        - PrunePropagationPolicy=foreground
+        - ServerSideApply=true
+        retry:
+          limit: 3
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 2m
+      
+      ignoreDifferences:
+      - group: core.delphix.com
+        kind: PostgresVDB
+        jsonPointers:
+        - /status
+      
+      info:
+        - name: description
+          value: "PostgreSQL VDB for feature branch {{.path.basenameNormalized}}"
+        - name: type
+          value: "feature-environment"
+        - name: cleanup-policy
+          value: "manual"
+        - name: ttl
+          value: "30d"

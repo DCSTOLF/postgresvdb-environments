@@ -1,0 +1,64 @@
+{{- if .Values.vdb.hooks }}
+{{- range .Values.vdb.hooks }}
+{{- if eq .type "command" | default false }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{ .name }}-{{ $.Release.Name }}"
+  namespace: {{ $.Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "{{ .weight | default "5" }}"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    "argocd.argoproj.io/sync-wave": "{{ add ($.Values.syncWave | default 0 | int) 1 }}"
+  labels:
+    {{- include "postgres-vdb.labels" $ | nindent 4 }}
+    hook: {{ .name }}
+    hook-stage: {{ .stage }}
+spec:
+  backoffLimit: {{ .backoffLimit | default 3 }}
+  template:
+    metadata:
+      labels:
+        {{- include "postgres-vdb.selectorLabels" $ | nindent 8 }}
+        hook: {{ .name }}
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: hook-executor
+        image: {{ $.Values.global.postgresImage }}
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          set -e
+          echo "Waiting for database to be ready..."
+          until pg_isready -h {{ $.Release.Name }} -p {{ $.Values.vdb.port }} -U {{ $.Values.vdb.database.user }}; do
+            echo "Waiting for database connection..."
+            sleep 2
+          done
+          echo "Database is ready, executing hook: {{ .name }}"
+          psql "postgresql://{{ $.Values.vdb.database.user }}:{{ $.Values.vdb.database.password }}@{{ $.Release.Name }}:{{ $.Values.vdb.port }}/{{ .database | default $.Values.vdb.database.name }}" <<'EOSQL'
+          {{ .script }}
+          EOSQL
+          echo "Hook {{ .name }} completed successfully"
+        env:
+        - name: PGPASSWORD
+          value: {{ $.Values.vdb.database.password | quote }}
+        - name: PGUSER
+          value: {{ $.Values.vdb.database.user | quote }}
+        - name: PGDATABASE
+          value: {{ .database | default $.Values.vdb.database.name | quote }}
+        {{- if .env }}
+        {{- range $key, $value := .env }}
+        - name: {{ $key }}
+          value: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
+      {{- if $.Values.securityContext }}
+      securityContext:
+        {{- toYaml $.Values.securityContext | nindent 8 }}
+      {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

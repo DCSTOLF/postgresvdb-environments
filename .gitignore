@@ -1,0 +1,31 @@
+# Ignore build artifacts
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Ignore IDE files
+.idea/
+.vscode/
+*.iml
+
+# Ignore temporary files
+*.tmp
+*.bak
+*.log
+
+# Ignore local environment files
+.env
+.env.local
+*.local
+
+# Ignore test outputs
+test-results/
+coverage/
+
+# Ignore Helm dependencies
+charts/*/charts/
+*.tgz
+
+# Ignore generated files
+*.generated.yaml
