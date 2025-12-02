@@ -15,15 +15,7 @@ spec:
       revision: main
       files:
       - path: "environments/dev.yaml"
-  - git:
-      repoURL: https://github.com/DCSTOLF/postgresvdb-environments.git
-      revision: main
-      files:
       - path: "environments/qa.yaml"
-  - git:
-      repoURL: https://github.com/DCSTOLF/postgresvdb-environments.git
-      revision: main
-      files:
       - path: "environments/feat-123.yaml"
   
   template:
