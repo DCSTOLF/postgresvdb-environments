@@ -21,16 +21,3 @@
 .idea/
 *.tmproj
 .vscode/
-# CI/CD
-.github/
-.gitlab-ci.yml
-.travis.yml
-# Testing
-test/
-tests/
-*.test
-# Documentation
-docs/
-*.md
-!Chart.yaml
-!values.yaml

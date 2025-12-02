@@ -7,11 +7,11 @@ global:
   # Default resource limits
   defaultResources:
     requests:
-      memory: "1Gi"
-      cpu: "500m"
-    limits:
       memory: "2Gi"
-      cpu: "1"
+      cpu: "2"
+    limits:
+      memory: "4Gi"
+      cpu: "2"
 
 # VDB configuration
 vdb:
@@ -44,8 +44,6 @@ vdb:
   postgresConfig:
     - name: "listen_addresses"
       value: "*"
-    - name: "port"
-      value: "5433"
     - name: "max_connections"
       value: "20"
     - name: "shared_buffers"
