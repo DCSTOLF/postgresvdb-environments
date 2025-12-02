@@ -11,7 +11,7 @@ metadata:
     - delphix
     - vdb
 spec:
-  owner: platform-team
+  owner: user:default/dcstolf
   type: resource
   
   parameters:
