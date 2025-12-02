@@ -14,7 +14,6 @@ validate: ## Validate all Helm charts and Kubernetes manifests
 	@helm lint charts/postgres-vdb
 	@echo "Validating Kubernetes manifests..."
 	@kubectl apply --dry-run=client -f applications/
-	@kubectl apply --dry-run=client -f crds/
 	@echo "✓ All validations passed"
 
 .PHONY: template
@@ -72,13 +71,6 @@ deploy-argocd-apps: ## Deploy ArgoCD applications
 	@kubectl apply -f applications/app-of-apps.yaml -n argocd
 	@echo "✓ ArgoCD applications deployed"
 	@echo "Monitor with: argocd app list"
-
-.PHONY: install-crds
-install-crds: ## Install Custom Resource Definitions
-	@echo "Installing CRDs..."
-	@kubectl apply -f crds/
-	@echo "✓ CRDs installed"
-	@kubectl get crds | grep delphix
 
 .PHONY: create-feature
 create-feature: ## Create a new feature environment (usage: make create-feature FEATURE=feat-name)
