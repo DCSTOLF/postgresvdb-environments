@@ -19,7 +19,7 @@ vdb:
   # PostgreSQL configuration optimized for feature branch (1Gi memory, 0.5 CPU)
   postgresConfig:
     - name: "listen_addresses"
-      value: "*"
+      value: "'*'"
     - name: "max_connections"
       value: "15"
     - name: "shared_buffers"

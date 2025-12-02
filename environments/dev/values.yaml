@@ -17,7 +17,7 @@ vdb:
   # PostgreSQL configuration optimized for dev (1Gi memory, 0.5 CPU)
   postgresConfig:
     - name: "listen_addresses"
-      value: "*"
+      value: "'*'"
     - name: "max_connections"
       value: "15"
     - name: "shared_buffers"
