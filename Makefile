@@ -21,7 +21,7 @@ validate: ## Validate all Helm charts and Kubernetes manifests
 template: ## Generate templates from Helm charts (dev environment)
 	@echo "Generating Helm templates for dev environment..."
 	@helm template dev-vdb charts/postgres-vdb \
-		-f environments/values-dev.yaml \
+		-f environments/dev.yaml \
 		--namespace postgres-vdbs-dev
 
 .PHONY: template-all
@@ -37,7 +37,7 @@ template-all: ## Generate templates for all environments
 .PHONY: diff
 diff: ## Show diff for dev environment (requires helm-diff plugin)
 	@helm diff upgrade dev-vdb charts/postgres-vdb \
-		-f environments/values-dev.yaml \
+		-f environments/dev.yaml \
 		--namespace postgres-vdbs-dev \
 		--allow-unreleased || true
 
@@ -45,7 +45,7 @@ diff: ## Show diff for dev environment (requires helm-diff plugin)
 install-dev: ## Install dev environment directly with Helm
 	@echo "Installing dev environment..."
 	@helm upgrade --install dev-vdb charts/postgres-vdb \
-		-f environments/values-dev.yaml \
+		-f environments/dev.yaml \
 		--namespace postgres-vdbs-dev \
 		--create-namespace
 	@echo "✓ Dev environment installed"
@@ -54,7 +54,7 @@ install-dev: ## Install dev environment directly with Helm
 install-qa: ## Install QA environment directly with Helm
 	@echo "Installing QA environment..."
 	@helm upgrade --install qa-vdb charts/postgres-vdb \
-		-f environments/values-qa.yaml \
+		-f environments/qa.yaml \
 		--namespace postgres-vdbs-qa \
 		--create-namespace
 	@echo "✓ QA environment installed"

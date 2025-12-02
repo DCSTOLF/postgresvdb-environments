@@ -162,8 +162,8 @@ argocd app sync <app-name> --force
 ## Configuration Files
 
 - **Base Helm values**: `charts/postgres-vdb/values.yaml`
-- **Dev environment**: `environments/values-dev.yaml`
-- **QA environment**: `environments/values-qa.yaml`
+- **Dev environment**: `environments/dev.yaml`
+- **QA environment**: `environments/qa.yaml`
 - **Prod environment**: `environments/values-prod.yaml`
 - **Feature environments**: `environments/features/values-*.yaml`
 

@@ -33,12 +33,12 @@ vdb-platform/
 │           ├── secrets.yaml
 │           └── _helpers.tpl
 ├── environments/
-│   ├── values-dev.yaml
-│   ├── values-qa.yaml
+│   ├── dev.yaml
+│   ├── qa.yaml
 │   ├── values-prod.yaml
 │   └── features/
-│       ├── values-feat-123.yaml
-│       └── values-feat-456.yaml
+│       ├── feat-123.yaml
+│       └── feat-456.yaml
 ├── applications/
 │   ├── app-of-apps.yaml
 │   ├── applicationset-environments.yaml
@@ -163,7 +163,7 @@ monitoring:
 
 ### Environment-Specific Values
 
-#### values-dev.yaml
+#### dev.yaml
 
 ```yaml
 environment: dev
@@ -189,7 +189,7 @@ vdb:
         GRANT USAGE ON SCHEMA dev_testing TO dev_user;
 ```
 
-#### values-qa.yaml
+#### qa.yaml
 
 ```yaml
 environment: qa
@@ -218,7 +218,7 @@ vdb:
         );
 ```
 
-#### values-feat-123.yaml
+#### feat-123.yaml
 
 ```yaml
 environment: feature
@@ -633,13 +633,13 @@ echo "Feature environment ${FEATURE_NAME} will be cleaned up automatically by Ar
 
 ```bash
 # Deploy development environment
-helm install dev-vdb ./charts/postgres-vdb -f environments/values-dev.yaml -n postgres-vdbs-dev
+helm install dev-vdb ./charts/postgres-vdb -f environments/dev.yaml -n postgres-vdbs-dev
 
 # Deploy QA environment  
-helm install qa-vdb ./charts/postgres-vdb -f environments/values-qa.yaml -n postgres-vdbs-qa
+helm install qa-vdb ./charts/postgres-vdb -f environments/qa.yaml -n postgres-vdbs-qa
 
 # Upgrade with new resources
-helm upgrade dev-vdb ./charts/postgres-vdb -f environments/values-dev.yaml --set vdb.resources.requests.memory=2Gi -n postgres-vdbs-dev
+helm upgrade dev-vdb ./charts/postgres-vdb -f environments/dev.yaml --set vdb.resources.requests.memory=2Gi -n postgres-vdbs-dev
 
 # Check status
 helm list -n postgres-vdbs-dev

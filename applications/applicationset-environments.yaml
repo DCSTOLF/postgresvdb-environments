@@ -14,7 +14,7 @@ spec:
       repoURL: https://github.com/DCSTOLF/postgresvdb-environments.git
       revision: main
       files:
-      - path: "environments/values-*.yaml"
+      - path: "environments/*.yaml"
   
   template:
     metadata:

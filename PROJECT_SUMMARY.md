@@ -27,12 +27,12 @@ postgresvdb-environments/
 │           └── _helpers.tpl
 │
 ├── environments/                   # Environment-specific configurations
-│   ├── values-dev.yaml
-│   ├── values-qa.yaml
+│   ├── dev.yaml
+│   ├── qa.yaml
 │   ├── values-prod.yaml
 │   └── features/
-│       ├── values-feat-123.yaml
-│       └── values-feat-456.yaml
+│       ├── feat-123.yaml
+│       └── feat-456.yaml
 │
 ├── crds/                          # Custom Resource Definitions
 │   └── postgresvdb.yaml
@@ -158,11 +158,11 @@ make connect-dev
 7. `charts/postgres-vdb/templates/_helpers.tpl` - Template helpers
 
 ### **Environment Configurations** (5 files)
-1. `environments/values-dev.yaml` - Development (60+ lines)
-2. `environments/values-qa.yaml` - QA (120+ lines)
+1. `environments/dev.yaml` - Development (60+ lines)
+2. `environments/qa.yaml` - QA (120+ lines)
 3. `environments/values-prod.yaml` - Production (150+ lines)
-4. `environments/features/values-feat-123.yaml` - Feature 123 (90+ lines)
-5. `environments/features/values-feat-456.yaml` - Feature 456 (110+ lines)
+4. `environments/features/feat-123.yaml` - Feature 123 (90+ lines)
+5. `environments/features/feat-456.yaml` - Feature 456 (110+ lines)
 
 ### **Custom Resources** (1 file)
 1. `crds/postgresvdb.yaml` - PostgresVDB CRD (280+ lines)
@@ -309,7 +309,7 @@ make status            # Show overall status
 ```bash
 # Deploy environment directly
 helm install dev-vdb charts/postgres-vdb \
-  -f environments/values-dev.yaml \
+  -f environments/dev.yaml \
   -n postgres-vdbs-dev
 
 # Check VDB status

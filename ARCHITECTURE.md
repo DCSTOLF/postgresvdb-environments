@@ -200,12 +200,12 @@ postgresvdb-environments/
 │           └── _helpers.tpl       # Template helpers
 │
 ├── environments/                   # Environment-specific values
-│   ├── values-dev.yaml            # Development environment
-│   ├── values-qa.yaml             # QA environment
+│   ├── dev.yaml            # Development environment
+│   ├── qa.yaml             # QA environment
 │   ├── values-prod.yaml           # Production environment
 │   └── features/                  # Feature branch environments
-│       ├── values-feat-123.yaml   # Feature branch 123
-│       └── values-feat-456.yaml   # Feature branch 456
+│       ├── feat-123.yaml   # Feature branch 123
+│       └── feat-456.yaml   # Feature branch 456
 │
 ├── applications/                   # ArgoCD applications
 │   ├── app-of-apps.yaml           # Root application

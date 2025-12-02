@@ -86,8 +86,8 @@ Expected structure:
 │   └── postgresvdb.yaml
 ├── environments/
 │   ├── features/
-│   ├── values-dev.yaml
-│   ├── values-qa.yaml
+│   ├── dev.yaml
+│   ├── qa.yaml
 │   └── values-prod.yaml
 └── scripts/
     ├── create-feature-env.sh
@@ -192,8 +192,8 @@ global:
 openssl rand -base64 16
 
 # Update each environment file
-# environments/values-dev.yaml
-# environments/values-qa.yaml
+# environments/dev.yaml
+# environments/qa.yaml
 # environments/values-prod.yaml (CRITICAL - use secrets in production!)
 ```
 
@@ -394,7 +394,7 @@ kubectl get namespace postgres-vdbs-feature-feat-789-new-api -w
 ```bash
 # Deploy using Helm directly (for testing)
 helm install dev-test ./charts/postgres-vdb \
-  -f environments/values-dev.yaml \
+  -f environments/dev.yaml \
   -n postgres-vdbs-dev-test \
   --create-namespace
 
@@ -410,10 +410,10 @@ kubectl delete namespace postgres-vdbs-dev-test
 
 ```bash
 # Edit environment values
-vim environments/values-dev.yaml
+vim environments/dev.yaml
 
 # Commit and push changes
-git add environments/values-dev.yaml
+git add environments/dev.yaml
 git commit -m "Update dev environment resources"
 git push origin main
 
