@@ -134,9 +134,12 @@ monitoring:
 
 # Service configuration
 service:
-  type: ClusterIP
-  port: 5432
+  # Public LoadBalancer service (disabled by default)
+  # The operator creates a ClusterIP service automatically
+  # Enable this to create an additional LoadBalancer service for external access
+  public: false
   annotations: {}
+  labels: {}
 
 # Security context
 securityContext:
