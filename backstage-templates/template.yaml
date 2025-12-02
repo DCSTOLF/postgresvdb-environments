@@ -1,0 +1,238 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: postgres-vdb-environment
+  title: Create PostgreSQL VDB Environment
+  description: Create a new PostgreSQL Virtual Database environment with GitOps automation
+  tags:
+    - postgres
+    - database
+    - gitops
+    - delphix
+    - vdb
+spec:
+  owner: platform-team
+  type: resource
+  
+  parameters:
+    - title: Environment Information
+      required:
+        - environmentName
+        - environmentType
+      properties:
+        environmentName:
+          title: Environment Name
+          type: string
+          description: Name of the environment (e.g., dev, qa, staging, prod, feat-xyz)
+          pattern: '^[a-z0-9][a-z0-9-]*[a-z0-9]$'
+          ui:autofocus: true
+          ui:help: 'Use lowercase letters, numbers, and hyphens. Must start and end with alphanumeric.'
+        
+        environmentType:
+          title: Environment Type
+          type: string
+          description: Type of environment
+          default: development
+          enum:
+            - development
+            - qa
+            - staging
+            - production
+            - feature
+          enumNames:
+            - 'Development'
+            - 'QA/Testing'
+            - 'Staging'
+            - 'Production'
+            - 'Feature Branch'
+        
+        description:
+          title: Description
+          type: string
+          description: Brief description of this environment's purpose
+    
+    - title: Database Configuration
+      required:
+        - databaseName
+        - databaseUser
+      properties:
+        databaseName:
+          title: Database Name
+          type: string
+          description: PostgreSQL database name
+          default: postgres
+        
+        databaseUser:
+          title: Database User
+          type: string
+          description: PostgreSQL username
+          default: postgres
+        
+        databasePassword:
+          title: Database Password
+          type: string
+          description: PostgreSQL password
+          default: Delphix_123!
+          ui:widget: password
+    
+    - title: Resource Configuration
+      required:
+        - memoryRequest
+        - cpuRequest
+      properties:
+        memoryRequest:
+          title: Memory Request
+          type: string
+          description: Memory request for the database pod
+          default: 1Gi
+          enum:
+            - 512Mi
+            - 1Gi
+            - 2Gi
+            - 4Gi
+            - 8Gi
+        
+        cpuRequest:
+          title: CPU Request
+          type: string
+          description: CPU request for the database pod
+          default: 500m
+          enum:
+            - 250m
+            - 500m
+            - 1
+            - 2
+            - 4
+        
+        memoryLimit:
+          title: Memory Limit
+          type: string
+          description: Memory limit for the database pod
+          default: 2Gi
+          enum:
+            - 1Gi
+            - 2Gi
+            - 4Gi
+            - 8Gi
+            - 16Gi
+        
+        cpuLimit:
+          title: CPU Limit
+          type: string
+          description: CPU limit for the database pod
+          default: 1
+          enum:
+            - 500m
+            - 1
+            - 2
+            - 4
+            - 8
+    
+    - title: PostgreSQL Configuration
+      properties:
+        maxConnections:
+          title: Max Connections
+          type: integer
+          description: Maximum number of concurrent connections
+          default: 20
+          minimum: 10
+          maximum: 1000
+        
+        sharedBuffers:
+          title: Shared Buffers
+          type: string
+          description: Amount of memory for shared buffers
+          default: 256MB
+          enum:
+            - 128MB
+            - 256MB
+            - 512MB
+            - 1GB
+            - 2GB
+    
+    - title: Service Configuration
+      properties:
+        enablePublicAccess:
+          title: Enable Public Access
+          type: boolean
+          description: Create a LoadBalancer service for external database access
+          default: false
+          ui:help: 'When enabled, a LoadBalancer service will be created for external access'
+        
+        enableMonitoring:
+          title: Enable Monitoring
+          type: boolean
+          description: Enable Prometheus monitoring for this database
+          default: false
+  
+  steps:
+    - id: fetch-base
+      name: Fetch Base Template
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          environmentName: ${{ parameters.environmentName }}
+          environmentType: ${{ parameters.environmentType }}
+          description: ${{ parameters.description }}
+          databaseName: ${{ parameters.databaseName }}
+          databaseUser: ${{ parameters.databaseUser }}
+          databasePassword: ${{ parameters.databasePassword }}
+          memoryRequest: ${{ parameters.memoryRequest }}
+          cpuRequest: ${{ parameters.cpuRequest }}
+          memoryLimit: ${{ parameters.memoryLimit }}
+          cpuLimit: ${{ parameters.cpuLimit }}
+          maxConnections: ${{ parameters.maxConnections }}
+          sharedBuffers: ${{ parameters.sharedBuffers }}
+          enablePublicAccess: ${{ parameters.enablePublicAccess }}
+          enableMonitoring: ${{ parameters.enableMonitoring }}
+    
+    - id: publish
+      name: Publish to GitHub
+      action: publish:github:pull-request
+      input:
+        repoUrl: github.com?repo=postgresvdb-environments&owner=DCSTOLF
+        branchName: add-environment-${{ parameters.environmentName }}
+        title: 'Add PostgreSQL VDB environment: ${{ parameters.environmentName }}'
+        description: |
+          ## New PostgreSQL VDB Environment
+          
+          **Environment**: `${{ parameters.environmentName }}`
+          **Type**: ${{ parameters.environmentType }}
+          **Description**: ${{ parameters.description }}
+          
+          ### Database Configuration
+          - Database Name: `${{ parameters.databaseName }}`
+          - Max Connections: ${{ parameters.maxConnections }}
+          - Shared Buffers: ${{ parameters.sharedBuffers }}
+          
+          ### Resources
+          - Memory: ${{ parameters.memoryRequest }} / ${{ parameters.memoryLimit }}
+          - CPU: ${{ parameters.cpuRequest }} / ${{ parameters.cpuLimit }}
+          
+          ### Features
+          - Public Access: ${{ parameters.enablePublicAccess }}
+          - Monitoring: ${{ parameters.enableMonitoring }}
+          
+          ---
+          Created via Backstage Software Template
+        targetPath: environments/${{ parameters.environmentName }}
+    
+    - id: register
+      name: Register in Backstage Catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+  
+  output:
+    links:
+      - title: Pull Request
+        url: ${{ steps.publish.output.remoteUrl }}
+        icon: github
+      - title: View in Catalog
+        url: ${{ steps.register.output.entityRef }}
+        icon: catalog
+      - title: ArgoCD (after merge)
+        url: https://argocd.k8s.delphixdemo.com/applications/postgres-vdb-${{ parameters.environmentName }}
+        icon: dashboard

@@ -1,0 +1,104 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: postgres-vdb-platform
+  title: PostgreSQL VDB Platform
+  description: GitOps platform for managing PostgreSQL Virtual Database environments using ArgoCD and Delphix
+  annotations:
+    backstage.io/techdocs-ref: dir:.
+    argocd/app-name: postgres-vdb-platform
+    github.com/project-slug: DCSTOLF/postgresvdb-environments
+  tags:
+    - postgres
+    - database
+    - gitops
+    - argocd
+    - delphix
+    - vdb
+  links:
+    - url: https://argocd.k8s.delphixdemo.com/applications/postgres-vdb-platform
+      title: ArgoCD - Platform
+      icon: dashboard
+    - url: https://github.com/DCSTOLF/postgresvdb-environments
+      title: GitHub Repository
+      icon: github
+spec:
+  type: platform
+  lifecycle: production
+  owner: platform-team
+  system: database-platform
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: postgres-vdb-dev
+  title: PostgreSQL VDB - Development
+  description: Development PostgreSQL database environment
+  annotations:
+    argocd/app-name: postgres-vdb-dev
+    delphix/vdb-id: dev-vdb
+  tags:
+    - postgres
+    - database
+    - development
+  links:
+    - url: https://argocd.k8s.delphixdemo.com/applications/postgres-vdb-dev
+      title: ArgoCD Application
+      icon: dashboard
+spec:
+  type: database
+  lifecycle: production
+  owner: platform-team
+  system: database-platform
+  dependsOn:
+    - component:postgres-vdb-platform
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: postgres-vdb-qa
+  title: PostgreSQL VDB - QA
+  description: QA PostgreSQL database environment
+  annotations:
+    argocd/app-name: postgres-vdb-qa
+    delphix/vdb-id: qa-vdb
+  tags:
+    - postgres
+    - database
+    - qa
+  links:
+    - url: https://argocd.k8s.delphixdemo.com/applications/postgres-vdb-qa
+      title: ArgoCD Application
+      icon: dashboard
+spec:
+  type: database
+  lifecycle: production
+  owner: platform-team
+  system: database-platform
+  dependsOn:
+    - component:postgres-vdb-platform
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: postgres-vdb-feat-123
+  title: PostgreSQL VDB - Feature 123
+  description: Feature branch database environment
+  annotations:
+    argocd/app-name: postgres-vdb-feat-123
+    delphix/vdb-id: feat-123-vdb
+  tags:
+    - postgres
+    - database
+    - feature
+  links:
+    - url: https://argocd.k8s.delphixdemo.com/applications/postgres-vdb-feat-123
+      title: ArgoCD Application
+      icon: dashboard
+spec:
+  type: database
+  lifecycle: experimental
+  owner: platform-team
+  system: database-platform
+  dependsOn:
+    - component:postgres-vdb-platform
