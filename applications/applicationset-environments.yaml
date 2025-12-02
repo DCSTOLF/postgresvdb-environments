@@ -10,23 +10,24 @@ spec:
   goTemplateOptions: ["missingkey=error"]
   
   generators:
-  - git:
-      repoURL: https://github.com/DCSTOLF/postgresvdb-environments.git
-      revision: main
-      files:
-      - path: "environments/dev.yaml"
-      - path: "environments/qa.yaml"
-      - path: "environments/feat-123.yaml"
+  - list:
+      elements:
+      - env: dev
+        valuesFile: environments/dev.yaml
+      - env: qa
+        valuesFile: environments/qa.yaml
+      - env: feat-123
+        valuesFile: environments/feat-123.yaml
   
   template:
     metadata:
-      name: "postgres-vdb-{{.path.basenameNormalized}}"
+      name: "postgres-vdb-{{.env}}"
       namespace: argocd
       labels:
         app.kubernetes.io/name: postgres-vdb
-        app.kubernetes.io/instance: "{{.path.basenameNormalized}}"
+        app.kubernetes.io/instance: "{{.env}}"
         app.kubernetes.io/part-of: postgres-vdb-platform
-        environment: "{{.path.basenameNormalized}}"
+        environment: "{{.env}}"
       annotations:
         argocd.argoproj.io/sync-wave: "1"
         notifications.argoproj.io/subscribe.on-sync-succeeded.slack: "postgres-vdb-alerts"
@@ -41,18 +42,18 @@ spec:
         targetRevision: main
         path: charts/postgres-vdb
         helm:
-          releaseName: "{{.path.basenameNormalized}}-vdb"
+          releaseName: "{{.env}}-vdb"
           valueFiles:
-          - "../../environments/{{.path.basenameNormalized}}.yaml"
+          - "../../{{.valuesFile}}"
           parameters:
           - name: environment
-            value: "{{.path.basenameNormalized}}"
+            value: "{{.env}}"
           - name: vdb.name
-            value: "{{.path.basenameNormalized}}-vdb"
+            value: "{{.env}}-vdb"
       
       destination:
         server: https://kubernetes.default.svc
-        namespace: "postgres-vdbs-{{.path.basenameNormalized}}"
+        namespace: "postgres-vdbs-{{.env}}"
       
       syncPolicy:
         automated:
@@ -79,14 +80,10 @@ spec:
       
       info:
         - name: description
-          value: "PostgreSQL VDB for {{.path.basenameNormalized}} environment"
+          value: "PostgreSQL VDB for {{.env}} environment"
         - name: owner
           value: "Platform Team"
         - name: environment
-          value: "{{.path.basenameNormalized}}"
-        - name: debug-path
-          value: "{{.path.path}}"
-        - name: debug-basename
-          value: "{{.path.basename}}"
-        - name: debug-basenameNormalized
-          value: "{{.path.basenameNormalized}}"
+          value: "{{.env}}"
+        - name: debug-valuesFile
+          value: "{{.valuesFile}}"
