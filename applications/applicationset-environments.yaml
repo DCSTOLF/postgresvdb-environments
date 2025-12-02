@@ -14,9 +14,7 @@ spec:
       repoURL: https://github.com/DCSTOLF/postgresvdb-environments.git
       revision: main
       files:
-      - path: "environments/dev.yaml"
-      - path: "environments/qa.yaml"
-      - path: "environments/features/*.yaml"
+      - path: "environments/*.yaml"
   
   template:
     metadata:
@@ -43,7 +41,7 @@ spec:
         helm:
           releaseName: "{{.path.basenameNormalized}}-vdb"
           valueFiles:
-          - "../../{{.path.path}}"
+          - "../../environments/{{.path.basenameNormalized}}.yaml"
           parameters:
           - name: environment
             value: "{{.path.basenameNormalized}}"
