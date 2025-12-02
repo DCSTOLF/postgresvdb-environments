@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: postgres-vdb-envs
+  name: postgres-vdb-environments
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "0"
@@ -14,7 +14,7 @@ spec:
       repoURL: https://github.com/DCSTOLF/postgresvdb-environments.git
       revision: main
       files:
-      - path: "environments/[dq]*.yaml"
+      - path: "environments/*.yaml"
   
   template:
     metadata:
