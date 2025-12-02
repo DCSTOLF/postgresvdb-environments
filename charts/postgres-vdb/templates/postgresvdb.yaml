@@ -53,8 +53,4 @@ spec:
   hooks:
     {{- toYaml .Values.vdb.hooks | nindent 4 }}
   {{- end }}
-  
-  {{- if .Values.global.storageClass }}
-  storageClass: {{ .Values.global.storageClass | quote }}
-  {{- end }}
 {{- end }}

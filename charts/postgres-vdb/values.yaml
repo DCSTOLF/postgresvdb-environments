@@ -2,7 +2,6 @@ global:
   # Source database configuration
   sourceDatabase: "10.0.1.54:largedb"
   postgresImage: "postgres:16.9"
-  storageClass: "de-fs-storage"
   
   # Default resource limits
   defaultResources:
