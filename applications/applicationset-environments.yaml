@@ -22,15 +22,15 @@ spec:
   
   template:
     metadata:
-      name: "postgres-vdb-{{path.basename}}"
+      name: "postgres-vdb-{{.path.basename}}"
       namespace: argocd
       labels:
         app.kubernetes.io/name: postgres-vdb
-        app.kubernetes.io/instance: "{{path.basename}}"
+        app.kubernetes.io/instance: "{{.path.basename}}"
         app.kubernetes.io/part-of: postgres-vdb-platform
         app.kubernetes.io/component: database
         app.kubernetes.io/managed-by: argocd
-        environment: "{{path.basename}}"
+        environment: "{{.path.basename}}"
         environment-type: "{{if hasPrefix \"feat-\" .path.basename}}feature{{else}}standard{{end}}"
       annotations:
         argocd.argoproj.io/sync-wave: "1"
@@ -39,7 +39,7 @@ spec:
         notifications.argoproj.io/subscribe.on-health-degraded.slack: "postgres-vdb-alerts"
         argocd.argoproj.io/sync-options: "PruneLast=true,ServerSideApply=true"
         argocd.argoproj.io/compare-options: "IgnoreExtraneous"
-        argocd.argoproj.io/manifest-generate-paths: "environments/{{path.basename}}/values.yaml"
+        argocd.argoproj.io/manifest-generate-paths: "environments/{{.path.basename}}/values.yaml"
     
     spec:
       project: default
@@ -49,22 +49,22 @@ spec:
         targetRevision: main
         path: charts/postgres-vdb
         helm:
-          releaseName: "{{path.basename}}-vdb"
+          releaseName: "{{.path.basename}}-vdb"
           valueFiles:
-          - "../../environments/{{path.basename}}/values.yaml"
+          - "../../environments/{{.path.basename}}/values.yaml"
           parameters:
           - name: global.environment
-            value: "{{path.basename}}"
+            value: "{{.path.basename}}"
           - name: global.environmentType
             value: "{{if hasPrefix \"feat-\" .path.basename}}feature{{else}}standard{{end}}"
           - name: vdb.name
-            value: "{{path.basename}}-vdb"
+            value: "{{.path.basename}}-vdb"
           - name: vdb.namespace
-            value: "postgres-vdbs-{{path.basename}}"
+            value: "postgres-vdbs-{{.path.basename}}"
       
       destination:
         server: https://kubernetes.default.svc
-        namespace: "postgres-vdbs-{{path.basename}}"
+        namespace: "postgres-vdbs-{{.path.basename}}"
       
       syncPolicy:
         automated:
@@ -99,17 +99,17 @@ spec:
       healthChecks:
       - group: core.delphix.com
         kind: PostgresVDB
-        name: "{{path.basename}}-vdb"
-        namespace: "postgres-vdbs-{{path.basename}}"
+        name: "{{.path.basename}}-vdb"
+        namespace: "postgres-vdbs-{{.path.basename}}"
         syncTimeoutSeconds: 600
       
       info:
         - name: description
-          value: "PostgreSQL VDB for {{path.basename}} environment"
+          value: "PostgreSQL VDB for {{.path.basename}} environment"
         - name: owner
           value: "Platform Team"
         - name: environment
-          value: "{{path.basename}}"
+          value: "{{.path.basename}}"
         - name: environment-type
           value: "{{if hasPrefix \"feat-\" .path.basename}}feature{{else}}standard{{end}}"
         - name: created-by
@@ -117,6 +117,6 @@ spec:
         - name: sync-policy
           value: "Automated with pruning"
         - name: namespace
-          value: "postgres-vdbs-{{path.basename}}"
+          value: "postgres-vdbs-{{.path.basename}}"
         - name: helm-release
-          value: "{{path.basename}}-vdb"
+          value: "{{.path.basename}}-vdb"
