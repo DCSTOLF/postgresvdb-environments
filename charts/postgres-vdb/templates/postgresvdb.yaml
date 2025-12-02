@@ -20,7 +20,7 @@ spec:
   port: {{ .Values.vdb.port }}
   image: {{ .Values.global.postgresImage | quote }}
   mountPath: {{ .Values.vdb.mountPath | quote }}
-  ownershipSpec: {{ .Values.vdb.ownershipSpec | quote }}
+  ownershipSpec: {{ .Values.vdb.ownershipSpec | default "999:999" | quote }}
   mode: {{ .Values.vdb.mode | quote }}
   errorBackoffPeriod: {{ .Values.vdb.errorBackoffPeriod | quote }}
   enabled: {{ .Values.vdb.enabled }}
