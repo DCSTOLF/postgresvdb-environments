@@ -82,3 +82,9 @@ spec:
           value: "Platform Team"
         - name: environment
           value: "{{.path.basenameNormalized}}"
+        - name: debug-path
+          value: "{{.path.path}}"
+        - name: debug-basename
+          value: "{{.path.basename}}"
+        - name: debug-basenameNormalized
+          value: "{{.path.basenameNormalized}}"
