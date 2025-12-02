@@ -98,3 +98,13 @@ spec:
   owner: user:default/dcstolf
   dependsOn:
     - component:default/postgres-vdb-platform
+---
+apiVersion: backstage.io/v1alpha1
+kind: Location
+metadata:
+  name: postgres-vdb-templates
+  description: Software templates for PostgreSQL VDB self-service provisioning
+spec:
+  type: url
+  targets:
+    - https://github.com/DCSTOLF/postgresvdb-environments/blob/main/backstage-templates/template.yaml
