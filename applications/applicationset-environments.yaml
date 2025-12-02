@@ -18,13 +18,13 @@ spec:
   
   template:
     metadata:
-      name: "postgres-vdb-{{.path.basename}}"
+      name: "postgres-vdb-{{.path.basenameNormalized}}"
       namespace: argocd
       labels:
         app.kubernetes.io/name: postgres-vdb
-        app.kubernetes.io/instance: "{{.path.basename}}"
+        app.kubernetes.io/instance: "{{.path.basenameNormalized}}"
         app.kubernetes.io/part-of: postgres-vdb-platform
-        environment: "{{.path.basename}}"
+        environment: "{{.path.basenameNormalized}}"
       annotations:
         argocd.argoproj.io/sync-wave: "1"
         notifications.argoproj.io/subscribe.on-sync-succeeded.slack: "postgres-vdb-alerts"
@@ -39,18 +39,18 @@ spec:
         targetRevision: main
         path: charts/postgres-vdb
         helm:
-          releaseName: "{{.path.basename}}-vdb"
+          releaseName: "{{.path.basenameNormalized}}-vdb"
           valueFiles:
-          - "../../environments/values-{{.path.basename}}.yaml"
+          - "../../environments/values-{{.path.basenameNormalized}}.yaml"
           parameters:
           - name: environment
-            value: "{{.path.basename}}"
+            value: "{{.path.basenameNormalized}}"
           - name: vdb.name
-            value: "{{.path.basename}}-vdb"
+            value: "{{.path.basenameNormalized}}-vdb"
       
       destination:
         server: https://kubernetes.default.svc
-        namespace: "postgres-vdbs-{{.path.basename}}"
+        namespace: "postgres-vdbs-{{.path.basenameNormalized}}"
       
       syncPolicy:
         automated:
@@ -77,8 +77,8 @@ spec:
       
       info:
         - name: description
-          value: "PostgreSQL VDB for {{.path.basename}} environment"
+          value: "PostgreSQL VDB for {{.path.basenameNormalized}} environment"
         - name: owner
           value: "Platform Team"
         - name: environment
-          value: "{{.path.basename}}"
+          value: "{{.path.basenameNormalized}}"
