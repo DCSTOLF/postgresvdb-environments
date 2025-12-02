@@ -31,8 +31,6 @@ spec:
       annotations:
         argocd.argoproj.io/sync-wave: "1"
         notifications.argoproj.io/subscribe.on-sync-succeeded.slack: "postgres-vdb-alerts"
-      finalizers:
-        - resources-finalizer.argocd.argoproj.io
     
     spec:
       project: default
