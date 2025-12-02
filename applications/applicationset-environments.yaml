@@ -5,32 +5,41 @@ metadata:
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/manifest-generate-paths: "applications/applicationset-environments.yaml"
+    argocd.argoproj.io/compare-options: "IgnoreExtraneous"
 spec:
   goTemplate: true
   goTemplateOptions: ["missingkey=error"]
   
   generators:
-  - list:
-      elements:
-      - env: dev
-        valuesFile: environments/dev.yaml
-      - env: qa
-        valuesFile: environments/qa.yaml
-      - env: feat-123
-        valuesFile: environments/feat-123.yaml
+  - git:
+      repoURL: https://github.com/DCSTOLF/postgresvdb-environments.git
+      revision: main
+      directories:
+      - path: environments/*
+        exclude: false
+        pathRegex: "^environments/(dev|qa|stage|prod|feat-[a-zA-Z0-9-]+)$"
   
   template:
     metadata:
-      name: "postgres-vdb-{{.env}}"
+      name: "postgres-vdb-{{path.basename}}"
       namespace: argocd
       labels:
         app.kubernetes.io/name: postgres-vdb
-        app.kubernetes.io/instance: "{{.env}}"
+        app.kubernetes.io/instance: "{{path.basename}}"
         app.kubernetes.io/part-of: postgres-vdb-platform
-        environment: "{{.env}}"
+        app.kubernetes.io/component: database
+        app.kubernetes.io/managed-by: argocd
+        environment: "{{path.basename}}"
+        environment-type: "{{if hasPrefix \"feat-\" .path.basename}}feature{{else}}standard{{end}}"
       annotations:
         argocd.argoproj.io/sync-wave: "1"
         notifications.argoproj.io/subscribe.on-sync-succeeded.slack: "postgres-vdb-alerts"
+        notifications.argoproj.io/subscribe.on-sync-failed.slack: "postgres-vdb-alerts"
+        notifications.argoproj.io/subscribe.on-health-degraded.slack: "postgres-vdb-alerts"
+        argocd.argoproj.io/sync-options: "PruneLast=true,ServerSideApply=true"
+        argocd.argoproj.io/compare-options: "IgnoreExtraneous"
+        argocd.argoproj.io/manifest-generate-paths: "environments/{{path.basename}}/values.yaml"
     
     spec:
       project: default
@@ -40,18 +49,22 @@ spec:
         targetRevision: main
         path: charts/postgres-vdb
         helm:
-          releaseName: "{{.env}}-vdb"
+          releaseName: "{{path.basename}}-vdb"
           valueFiles:
-          - "../../{{.valuesFile}}"
+          - "../../environments/{{path.basename}}/values.yaml"
           parameters:
-          - name: environment
-            value: "{{.env}}"
+          - name: global.environment
+            value: "{{path.basename}}"
+          - name: global.environmentType
+            value: "{{if hasPrefix \"feat-\" .path.basename}}feature{{else}}standard{{end}}"
           - name: vdb.name
-            value: "{{.env}}-vdb"
+            value: "{{path.basename}}-vdb"
+          - name: vdb.namespace
+            value: "postgres-vdbs-{{path.basename}}"
       
       destination:
         server: https://kubernetes.default.svc
-        namespace: "postgres-vdbs-{{.env}}"
+        namespace: "postgres-vdbs-{{path.basename}}"
       
       syncPolicy:
         automated:
@@ -63,6 +76,7 @@ spec:
         - PrunePropagationPolicy=foreground
         - ServerSideApply=true
         - RespectIgnoreDifferences=true
+        - PruneLast=true
         retry:
           limit: 5
           backoff:
@@ -75,13 +89,34 @@ spec:
         kind: PostgresVDB
         jsonPointers:
         - /status
+        - /metadata/creationTimestamp
+        - /metadata/resourceVersion
+        - /metadata/generation
+        - /metadata/uid
+        - /metadata/managedFields
+      
+      # Health check customization
+      healthChecks:
+      - group: core.delphix.com
+        kind: PostgresVDB
+        name: "{{path.basename}}-vdb"
+        namespace: "postgres-vdbs-{{path.basename}}"
+        syncTimeoutSeconds: 600
       
       info:
         - name: description
-          value: "PostgreSQL VDB for {{.env}} environment"
+          value: "PostgreSQL VDB for {{path.basename}} environment"
         - name: owner
           value: "Platform Team"
         - name: environment
-          value: "{{.env}}"
-        - name: debug-valuesFile
-          value: "{{.valuesFile}}"
+          value: "{{path.basename}}"
+        - name: environment-type
+          value: "{{if hasPrefix \"feat-\" .path.basename}}feature{{else}}standard{{end}}"
+        - name: created-by
+          value: "ApplicationSet auto-generation"
+        - name: sync-policy
+          value: "Automated with pruning"
+        - name: namespace
+          value: "postgres-vdbs-{{path.basename}}"
+        - name: helm-release
+          value: "{{path.basename}}-vdb"
