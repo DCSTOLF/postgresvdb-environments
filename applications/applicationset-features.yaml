@@ -43,7 +43,7 @@ spec:
         helm:
           releaseName: "{{.path.basenameNormalized}}-vdb"
           valueFiles:
-          - "../../environments/features/values-{{.path.basename}}.yaml"
+          - "../../environments/features/{{.path.basenameNormalized}}.yaml"
           parameters:
           - name: environment
             value: "feature"
