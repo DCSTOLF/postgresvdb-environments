@@ -26,7 +26,6 @@ spec:
   type: platform
   lifecycle: production
   owner: user:default/dcstolf
-  system: database-platform
 ---
 apiVersion: backstage.io/v1alpha1
 kind: Resource
@@ -49,7 +48,6 @@ spec:
   type: database
   lifecycle: production
   owner: user:default/dcstolf
-  system: database-platform
   dependsOn:
     - component:default/postgres-vdb-platform
 ---
@@ -74,7 +72,6 @@ spec:
   type: database
   lifecycle: production
   owner: user:default/dcstolf
-  system: database-platform
   dependsOn:
     - component:default/postgres-vdb-platform
 ---
@@ -99,6 +96,5 @@ spec:
   type: database
   lifecycle: experimental
   owner: user:default/dcstolf
-  system: database-platform
   dependsOn:
     - component:default/postgres-vdb-platform
