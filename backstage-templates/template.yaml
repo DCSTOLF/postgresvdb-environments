@@ -130,25 +130,53 @@ spec:
     
     - title: PostgreSQL Configuration
       properties:
-        maxConnections:
-          title: Max Connections
-          type: integer
-          description: Maximum number of concurrent connections
-          default: 20
-          minimum: 10
-          maximum: 1000
-        
-        sharedBuffers:
-          title: Shared Buffers
-          type: string
-          description: Amount of memory for shared buffers
-          default: 256MB
-          enum:
-            - 128MB
-            - 256MB
-            - 512MB
-            - 1GB
-            - 2GB
+        postgresConfig:
+          title: PostgreSQL Parameters
+          type: array
+          description: Custom PostgreSQL configuration parameters
+          default:
+            - name: max_connections
+              value: "20"
+            - name: shared_buffers
+              value: "256MB"
+            - name: "shared_buffers"
+              value: "1GB"  
+            - name: "effective_cache_size"
+              value: "3GB"  
+            - name: "work_mem"
+              value: "32MB" 
+            - name: "maintenance_work_mem"
+              value: "256MB"  
+            - name: "temp_buffers"
+              value: "4MB" 
+            - name: "max_worker_processes"
+              value: "2" 
+            - name: "max_parallel_workers_per_gather"
+              value: "1" 
+            - name: "max_parallel_maintenance_workers"
+              value: "1" 
+            - name: "max_parallel_workers"
+              value: "2"  
+            - name: "wal_buffers"
+              value: "16MB" 
+          items:
+            type: object
+            required:
+              - name
+              - value
+            properties:
+              name:
+                type: string
+                title: Parameter Name
+                description: PostgreSQL configuration parameter name (e.g., max_connections, shared_buffers)
+              value:
+                type: string
+                title: Parameter Value
+                description: Value for the parameter (must be quoted if it contains special characters)
+          ui:options:
+            addable: true
+            orderable: true
+            removable: true
     
     - title: Service Configuration
       properties:
@@ -182,8 +210,7 @@ spec:
           cpuRequest: ${{ parameters.cpuRequest }}
           memoryLimit: ${{ parameters.memoryLimit }}
           cpuLimit: ${{ parameters.cpuLimit }}
-          maxConnections: ${{ parameters.maxConnections }}
-          sharedBuffers: ${{ parameters.sharedBuffers }}
+          postgresConfig: ${{ parameters.postgresConfig }}
           enablePublicAccess: ${{ parameters.enablePublicAccess }}
           enableMonitoring: ${{ parameters.enableMonitoring }}
     
@@ -203,8 +230,7 @@ spec:
           
           ### Database Configuration
           - Database Name: `${{ parameters.databaseName }}`
-          - Max Connections: ${{ parameters.maxConnections }}
-          - Shared Buffers: ${{ parameters.sharedBuffers }}
+          - PostgreSQL Parameters: ${{ parameters.postgresConfig.length }} custom parameters
           
           ### Resources
           - Memory: ${{ parameters.memoryRequest }} / ${{ parameters.memoryLimit }}
