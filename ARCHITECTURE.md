@@ -6,26 +6,26 @@
 ┌─────────────────────────────────────────────────────────────────────┐
 │                           Git Repository                             │
 │  ┌────────────────┬──────────────────┬────────────────────────────┐ │
-│  │  Helm Charts   │  Environment     │  ArgoCD Applications       │ │
-│  │  (templates)   │  Values          │  (ApplicationSets)         │ │
+│  │  Helm Charts   │  Environments    │  ArgoCD ApplicationSet     │ │
+│  │  (templates)   │  (directories)   │  + Backstage Templates     │ │
 │  └────────────────┴──────────────────┴────────────────────────────┘ │
 └────────────────────────────────────┬────────────────────────────────┘
                                      │
-                                     │ GitOps Pull
+                                     │ GitOps Pull (Git Directory Generator)
                                      ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │                            ArgoCD                                    │
 │  ┌─────────────────────────────────────────────────────────────┐   │
-│  │              Application of Applications                     │   │
-│  │  ┌──────────────────┬─────────────────────────────────────┐ │   │
-│  │  │ ApplicationSet:  │  ApplicationSet:                    │ │   │
-│  │  │ Environments     │  Feature Branches                   │ │   │
-│  │  │ ┌──────────┐     │  ┌──────────┬──────────┬─────────┐ │ │   │
-│  │  │ │ Dev      │     │  │ feat-123 │ feat-456 │   ...   │ │ │   │
-│  │  │ │ QA       │     │  └──────────┴──────────┴─────────┘ │ │   │
-│  │  │ │ Prod     │     │                                     │ │   │
-│  │  │ └──────────┘     │                                     │ │   │
-│  │  └──────────────────┴─────────────────────────────────────┘ │   │
+│  │         ApplicationSet: postgres-vdb-platform               │   │
+│  │         (Git Directory Generator)                           │   │
+│  │  ┌─────────────────────────────────────────────────────────┐│   │
+│  │  │  Discovers: environments/*/values.yaml                  ││   │
+│  │  │                                                          ││   │
+│  │  │  Generated Applications:                                ││   │
+│  │  │  ┌──────────┬──────────┬──────────┬──────────────────┐ ││   │
+│  │  │  │ Dev      │ QA       │ feat-123 │ [any-env-name]   │ ││   │
+│  │  │  └──────────┴──────────┴──────────┴──────────────────┘ ││   │
+│  │  └─────────────────────────────────────────────────────────┘│   │
 │  └─────────────────────────────────────────────────────────────┘   │
 └────────────────────────────────────┬────────────────────────────────┘
                                      │ Deploy & Manage
@@ -56,7 +56,7 @@
 │  └─────────────────────────────────────────────────────────────┘   │
 │                                                                      │
 │  ┌─────────────────────────────────────────────────────────────┐   │
-│  │  Namespace: postgres-vdbs-feature-feat-123                  │   │
+│  │  Namespace: postgres-vdbs-feat-123                          │   │
 │  │  (Dynamic feature branch environment)                       │   │
 │  └─────────────────────────────────────────────────────────────┘   │
 └────────────────────────────────┬────────────────────────────────────┘
@@ -130,51 +130,101 @@ PostgresVDB CR           Operator              Delphix DCT        Kubernetes
        │  Phase: Running      │                      │                │
 ```
 
-### 3. Feature Branch Lifecycle
+### 3. Environment Creation Lifecycle (Two Paths)
+
+#### Path A: Self-Service via Backstage
 
 ```
-Developer     Script            Git Repo        ArgoCD         Kubernetes
+Developer     Backstage         GitHub PR       ArgoCD         Kubernetes
     │            │                  │              │                │
-    │──Execute───▶│                  │              │                │
-    │  create-   │                  │              │                │
-    │  feature   │                  │              │                │
-    │  -env.sh   │                  │              │                │
+    │──Access────▶│                  │              │                │
+    │  /create   │                  │              │                │
     │            │                  │              │                │
-    │            │──Generate────────▶│              │                │
-    │            │  values file     │              │                │
+    │──Fill Form─│                  │              │                │
+    │  (VDB cfg) │                  │              │                │
     │            │                  │              │                │
-    │            │  Commit & Push   │              │                │
-    │            │──────────────────▶│              │                │
+    │            │──Generate PR─────▶│              │                │
+    │            │  environments/   │              │                │
+    │            │  {name}/         │              │                │
+    │            │  values.yaml     │              │                │
     │            │                  │              │                │
-    │            │                  │◀──Sync───────│                │
+    │◀──Review PR────────────────────│              │                │
+    │            │                  │              │                │
+    │──Merge PR──────────────────────▶│              │                │
+    │            │                  │              │                │
+    │            │                  │◀──Detect─────│                │
+    │            │                  │  New Dir     │                │
     │            │                  │              │                │
     │            │                  │              │──Create────────▶│
-    │            │                  │              │  Feature VDB   │
+    │            │                  │              │  VDB App       │
+    │            │                  │              │  + Namespace   │
     │            │                  │              │                │
-    │◀──Notify───│                  │              │                │
-    │  Complete  │                  │              │                │
+    │◀──Notify (Optional)────────────│              │                │
+    │  VDB Ready │                  │              │                │
+```
+
+#### Path B: Direct via Makefile/Git
+
+```
+Developer     Makefile          Git Repo        ArgoCD         Kubernetes
     │            │                  │              │                │
-    │                                                                │
-    │         [Development Work on Feature Branch]                  │
-    │                                                                │
     │──Execute───▶│                  │              │                │
-    │  cleanup-  │                  │              │                │
-    │  feature   │                  │              │                │
-    │  -env.sh   │                  │              │                │
+    │  make      │                  │              │                │
+    │  create-env│                  │              │                │
+    │  ENV=name  │                  │              │                │
     │            │                  │              │                │
-    │            │──Delete──────────▶│              │                │
-    │            │  values file     │              │                │
+    │            │──Create Dir──────▶│              │                │
+    │            │  environments/   │              │                │
+    │            │  {name}/         │              │                │
+    │            │  values.yaml     │              │                │
     │            │                  │              │                │
-    │            │  Commit & Push   │              │                │
-    │            │──────────────────▶│              │                │
+    │──Review & ─┤                  │              │                │
+    │  Commit    │                  │              │                │
     │            │                  │              │                │
-    │            │                  │◀──Sync───────│                │
+    │──Push──────┼──────────────────▶│              │                │
     │            │                  │              │                │
-    │            │                  │              │──Delete────────▶│
-    │            │                  │              │  Resources     │
-    │            │                  │              │  & Namespace   │
-    │◀──Notify───│                  │              │                │
-    │  Complete  │                  │              │                │
+    │            │                  │◀──Detect─────│                │
+    │            │                  │  New Dir     │                │
+    │            │                  │              │                │
+    │            │                  │              │──Create────────▶│
+    │            │                  │              │  VDB App       │
+    │            │                  │              │                │
+    │◀──Monitor──│                  │              │                │
+    │  argocd    │                  │              │                │
+    │  app get   │                  │              │                │
+```
+
+### 4. Environment Deletion Lifecycle
+
+```
+Developer     Makefile/ArgoCD   Git Repo        Kubernetes
+    │            │                  │                │
+    │──Execute───▶│                  │                │
+    │  make      │                  │                │
+    │  delete-env│                  │                │
+    │  ENV=name  │                  │                │
+    │            │                  │                │
+    │  [5 sec    │                  │                │
+    │   warning] │                  │                │
+    │            │                  │                │
+    │            │──Delete App──────┼───────────────▶│
+    │            │  --cascade       │   Delete VDB   │
+    │            │                  │   Delete NS    │
+    │            │                  │                │
+    │            │  [Wait 10s]      │                │
+    │            │                  │                │
+    │            │──Force Delete────┼───────────────▶│
+    │            │  (if needed)     │   Finalizers   │
+    │            │                  │                │
+    │            │──Remove Dir──────▶│                │
+    │            │  environments/   │                │
+    │            │  {name}/         │                │
+    │            │                  │                │
+    │──Commit &──┤                  │                │
+    │  Push      │                  │                │
+    │            │                  │                │
+    │◀──Verify───│                  │                │
+    │  Cleanup   │                  │                │
 ```
 
 ## Directory Structure Details
@@ -198,25 +248,33 @@ postgresvdb-environments/
 │           ├── secrets.yaml       # Secrets and Service
 │           └── _helpers.tpl       # Template helpers
 │
-├── environments/                   # Environment-specific values
-│   ├── dev.yaml            # Development environment
-│   ├── qa.yaml             # QA environment
-│   ├── values-prod.yaml           # Production environment
-│   └── features/                  # Feature branch environments
-│       ├── feat-123.yaml   # Feature branch 123
-│       └── feat-456.yaml   # Feature branch 456
+├── environments/                   # Environment-specific values (directory-based)
+│   ├── dev/                       # Development environment
+│   │   └── values.yaml
+│   ├── qa/                        # QA environment
+│   │   └── values.yaml
+│   ├── feat-123/                  # Feature branch 123
+│   │   └── values.yaml
+│   └── [env-name]/                # Additional environments
+│       └── values.yaml            # Environment configuration
 │
 ├── applications/                   # ArgoCD applications
-│   ├── app-of-apps.yaml           # Root application
-│   ├── applicationset-environments.yaml  # Env ApplicationSet
-│   └── applicationset-features.yaml      # Feature ApplicationSet
+│   ├── postgres-vdb-appset.yaml   # ApplicationSet (Git directory generator)
+│   └── [legacy files]             # Old app-of-apps/applicationset files
+│
+├── backstage-templates/           # Backstage Software Templates
+│   ├── template.yaml              # Self-service VDB creation template
+│   ├── skeleton/                  # Template files
+│   │   └── values.yaml            # Jinja2 template for environments
+│   └── README.md                  # Template documentation
 │
 ├── crds/                          # Custom Resource Definitions
 │   └── postgresvdb.yaml           # PostgresVDB CRD
 │
-└── scripts/                       # Automation scripts
-    ├── create-feature-env.sh      # Create feature environment
-    └── cleanup-feature-env.sh     # Delete feature environment
+├── catalog-info.yaml              # Backstage catalog entities
+├── template-location.yaml         # Backstage template location
+│
+└── [documentation files]          # README, QUICKSTART, ARCHITECTURE, etc.
 ```
 
 ## Data Flow
