@@ -1,4 +1,15 @@
 apiVersion: backstage.io/v1alpha1
+kind: Location
+metadata:
+  name: postgres-vdb-templates
+  title: PostgreSQL VDB Templates
+  description: Software templates for creating PostgreSQL VDB environments
+spec:
+  type: url
+  targets:
+    - ./backstage-templates/template.yaml
+---
+apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
   name: postgres-vdb-platform
