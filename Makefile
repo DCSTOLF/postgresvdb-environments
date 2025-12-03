@@ -20,23 +20,36 @@ validate: ## Validate all Helm charts and Kubernetes manifests
 template: ## Generate templates from Helm charts (dev environment)
 	@echo "Generating Helm templates for dev environment..."
 	@helm template dev-vdb charts/postgres-vdb \
-		-f environments/dev.yaml \
+		-f environments/dev/values.yaml \
 		--namespace postgres-vdbs-dev
+
+.PHONY: template-env
+template-env: ## Generate templates for specific environment (usage: make template-env ENV=dev)
+ifndef ENV
+	@echo "Error: ENV variable is required"
+	@echo "Usage: make template-env ENV=dev"
+	@exit 1
+endif
+	@echo "Generating Helm templates for $(ENV) environment..."
+	@helm template $(ENV)-vdb charts/postgres-vdb \
+		-f environments/$(ENV)/values.yaml \
+		--namespace postgres-vdbs-$(ENV)
 
 .PHONY: template-all
 template-all: ## Generate templates for all environments
 	@echo "Generating templates for all environments..."
-	@for env in dev qa prod; do \
+	@for dir in environments/*/; do \
+		env=$$(basename $$dir); \
 		echo "\n=== Environment: $$env ==="; \
 		helm template $${env}-vdb charts/postgres-vdb \
-			-f environments/values-$${env}.yaml \
+			-f environments/$${env}/values.yaml \
 			--namespace postgres-vdbs-$${env}; \
 	done
 
 .PHONY: diff
 diff: ## Show diff for dev environment (requires helm-diff plugin)
 	@helm diff upgrade dev-vdb charts/postgres-vdb \
-		-f environments/dev.yaml \
+		-f environments/dev/values.yaml \
 		--namespace postgres-vdbs-dev \
 		--allow-unreleased || true
 
@@ -44,7 +57,7 @@ diff: ## Show diff for dev environment (requires helm-diff plugin)
 install-dev: ## Install dev environment directly with Helm
 	@echo "Installing dev environment..."
 	@helm upgrade --install dev-vdb charts/postgres-vdb \
-		-f environments/dev.yaml \
+		-f environments/dev/values.yaml \
 		--namespace postgres-vdbs-dev \
 		--create-namespace
 	@echo "✓ Dev environment installed"
@@ -53,10 +66,24 @@ install-dev: ## Install dev environment directly with Helm
 install-qa: ## Install QA environment directly with Helm
 	@echo "Installing QA environment..."
 	@helm upgrade --install qa-vdb charts/postgres-vdb \
-		-f environments/qa.yaml \
+		-f environments/qa/values.yaml \
 		--namespace postgres-vdbs-qa \
 		--create-namespace
 	@echo "✓ QA environment installed"
+
+.PHONY: install-env
+install-env: ## Install specific environment directly with Helm (usage: make install-env ENV=dev)
+ifndef ENV
+	@echo "Error: ENV variable is required"
+	@echo "Usage: make install-env ENV=dev"
+	@exit 1
+endif
+	@echo "Installing $(ENV) environment..."
+	@helm upgrade --install $(ENV)-vdb charts/postgres-vdb \
+		-f environments/$(ENV)/values.yaml \
+		--namespace postgres-vdbs-$(ENV) \
+		--create-namespace
+	@echo "✓ $(ENV) environment installed"
 
 .PHONY: uninstall-dev
 uninstall-dev: ## Uninstall dev environment
@@ -64,6 +91,18 @@ uninstall-dev: ## Uninstall dev environment
 	@helm uninstall dev-vdb --namespace postgres-vdbs-dev || true
 	@kubectl delete namespace postgres-vdbs-dev || true
 	@echo "✓ Dev environment uninstalled"
+
+.PHONY: uninstall-env
+uninstall-env: ## Uninstall specific environment (usage: make uninstall-env ENV=dev)
+ifndef ENV
+	@echo "Error: ENV variable is required"
+	@echo "Usage: make uninstall-env ENV=dev"
+	@exit 1
+endif
+	@echo "Uninstalling $(ENV) environment..."
+	@helm uninstall $(ENV)-vdb --namespace postgres-vdbs-$(ENV) || true
+	@kubectl delete namespace postgres-vdbs-$(ENV) || true
+	@echo "✓ $(ENV) environment uninstalled"
 
 .PHONY: deploy-argocd-apps
 deploy-argocd-apps: ## Deploy ArgoCD applications
@@ -80,7 +119,49 @@ ifndef FEATURE
 	@exit 1
 endif
 	@echo "Creating feature environment: $(FEATURE)"
-	@./scripts/create-feature-env.sh $(FEATURE)
+	@mkdir -p environments/$(FEATURE)
+	@echo "Copying template from dev environment..."
+	@cp environments/dev/values.yaml environments/$(FEATURE)/values.yaml
+	@echo "Updating environment name in values.yaml..."
+	@sed -i.bak 's/dev/$(FEATURE)/g' environments/$(FEATURE)/values.yaml && rm environments/$(FEATURE)/values.yaml.bak
+	@echo ""
+	@echo "✓ Feature environment created at: environments/$(FEATURE)/"
+	@echo ""
+	@echo "Next steps:"
+	@echo "  1. Review and customize: environments/$(FEATURE)/values.yaml"
+	@echo "  2. Commit and push to trigger ArgoCD deployment:"
+	@echo "     git add environments/$(FEATURE)/"
+	@echo "     git commit -m 'Add $(FEATURE) environment'"
+	@echo "     git push"
+	@echo "  3. Monitor deployment:"
+	@echo "     argocd app list --grpc-web | grep $(FEATURE)"
+	@echo "     kubectl get postgresvdb -n postgres-vdbs-$(FEATURE)"
+
+.PHONY: create-env
+create-env: ## Create a new environment from template (usage: make create-env ENV=stage)
+ifndef ENV
+	@echo "Error: ENV variable is required"
+	@echo "Usage: make create-env ENV=stage"
+	@exit 1
+endif
+	@echo "Creating $(ENV) environment..."
+	@mkdir -p environments/$(ENV)
+	@echo "Copying template from dev environment..."
+	@cp environments/dev/values.yaml environments/$(ENV)/values.yaml
+	@echo "Updating environment name in values.yaml..."
+	@sed -i.bak 's/dev/$(ENV)/g' environments/$(ENV)/values.yaml && rm environments/$(ENV)/values.yaml.bak
+	@echo ""
+	@echo "✓ Environment created at: environments/$(ENV)/"
+	@echo ""
+	@echo "Next steps:"
+	@echo "  1. Review and customize: environments/$(ENV)/values.yaml"
+	@echo "  2. Commit and push to trigger ArgoCD deployment:"
+	@echo "     git add environments/$(ENV)/"
+	@echo "     git commit -m 'Add $(ENV) environment'"
+	@echo "     git push"
+	@echo "  3. Monitor deployment:"
+	@echo "     argocd app list --grpc-web | grep $(ENV)"
+	@echo "     kubectl get postgresvdb -n postgres-vdbs-$(ENV)"
 
 .PHONY: cleanup-feature
 cleanup-feature: ## Cleanup a feature environment (usage: make cleanup-feature FEATURE=feat-name)
@@ -89,8 +170,80 @@ ifndef FEATURE
 	@echo "Usage: make cleanup-feature FEATURE=feat-789-new-api"
 	@exit 1
 endif
-	@echo "Cleaning up feature environment: $(FEATURE)"
-	@./scripts/cleanup-feature-env.sh $(FEATURE)
+	@echo "⚠️  WARNING: This will delete the $(FEATURE) environment and all its resources!"
+	@echo "Press Ctrl+C to cancel, or wait 5 seconds to continue..."
+	@sleep 5
+	@echo ""
+	@echo "Deleting ArgoCD application with cascade..."
+	@argocd app delete postgres-vdb-$(FEATURE) --grpc-web --cascade --yes 2>/dev/null || echo "ArgoCD app not found or already deleted"
+	@echo ""
+	@echo "Waiting for resources to be cleaned up..."
+	@sleep 10
+	@echo "Verifying VDB deletion..."
+	@kubectl get postgresvdb -n postgres-vdbs-$(FEATURE) 2>/dev/null && \
+		echo "⚠️  VDB still exists, forcing deletion..." && \
+		kubectl delete postgresvdb --all -n postgres-vdbs-$(FEATURE) --force --grace-period=0 || \
+		echo "✓ VDB deleted"
+	@echo "Verifying namespace deletion..."
+	@kubectl get namespace postgres-vdbs-$(FEATURE) 2>/dev/null && \
+		echo "⚠️  Namespace still exists, forcing deletion..." && \
+		kubectl delete namespace postgres-vdbs-$(FEATURE) --force --grace-period=0 || \
+		echo "✓ Namespace deleted"
+	@echo ""
+	@echo "Removing environment directory from git..."
+	@rm -rf environments/$(FEATURE)
+	@echo ""
+	@echo "✓ Feature environment cleanup complete!"
+	@echo ""
+	@echo "Next steps:"
+	@echo "  1. Commit the removal:"
+	@echo "     git add environments/"
+	@echo "     git commit -m 'Remove $(FEATURE) environment'"
+	@echo "     git push"
+	@echo "  2. Verify complete cleanup:"
+	@echo "     argocd app list --grpc-web | grep $(FEATURE)"
+	@echo "     kubectl get all -n postgres-vdbs-$(FEATURE)"
+
+.PHONY: delete-env
+delete-env: ## Delete an environment completely (usage: make delete-env ENV=stage)
+ifndef ENV
+	@echo "Error: ENV variable is required"
+	@echo "Usage: make delete-env ENV=stage"
+	@exit 1
+endif
+	@echo "⚠️  WARNING: This will delete the $(ENV) environment and all its resources!"
+	@echo "Press Ctrl+C to cancel, or wait 5 seconds to continue..."
+	@sleep 5
+	@echo ""
+	@echo "Deleting ArgoCD application with cascade..."
+	@argocd app delete postgres-vdb-$(ENV) --grpc-web --cascade --yes 2>/dev/null || echo "ArgoCD app not found or already deleted"
+	@echo ""
+	@echo "Waiting for resources to be cleaned up..."
+	@sleep 10
+	@echo "Verifying VDB deletion..."
+	@kubectl get postgresvdb -n postgres-vdbs-$(ENV) 2>/dev/null && \
+		echo "⚠️  VDB still exists, forcing deletion..." && \
+		kubectl delete postgresvdb --all -n postgres-vdbs-$(ENV) --force --grace-period=0 || \
+		echo "✓ VDB deleted"
+	@echo "Verifying namespace deletion..."
+	@kubectl get namespace postgres-vdbs-$(ENV) 2>/dev/null && \
+		echo "⚠️  Namespace still exists, forcing deletion..." && \
+		kubectl delete namespace postgres-vdbs-$(ENV) --force --grace-period=0 || \
+		echo "✓ Namespace deleted"
+	@echo ""
+	@echo "Removing environment directory from git..."
+	@rm -rf environments/$(ENV)
+	@echo ""
+	@echo "✓ Environment cleanup complete!"
+	@echo ""
+	@echo "Next steps:"
+	@echo "  1. Commit the removal:"
+	@echo "     git add environments/"
+	@echo "     git commit -m 'Remove $(ENV) environment'"
+	@echo "     git push"
+	@echo "  2. Verify complete cleanup:"
+	@echo "     argocd app list --grpc-web | grep $(ENV)"
+	@echo "     kubectl get all -n postgres-vdbs-$(ENV)"
 
 .PHONY: list-vdbs
 list-vdbs: ## List all PostgresVDB resources
