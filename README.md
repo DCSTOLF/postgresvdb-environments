@@ -776,3 +776,143 @@ For issues and questions:
 2. Review ArgoCD application sync status
 3. Consult the PostgresVDB operator documentation
 4. Open issues in the project repository
+
+## Deleting Environments
+
+When you need to remove a PostgreSQL VDB environment, follow these steps to ensure complete cleanup:
+
+### Option 1: Delete via ArgoCD (Recommended)
+
+This is the cleanest approach as it removes both the ArgoCD application and all Kubernetes resources in one command:
+
+```bash
+# Delete the environment (replace {env-name} with actual environment name: dev, qa, feat-123, etc.)
+argocd app delete postgres-vdb-{env-name} --grpc-web --cascade --yes
+```
+
+**Important**: Always use the `--cascade` flag to ensure all Kubernetes resources are deleted along with the ArgoCD application.
+
+**Example:**
+```bash
+# Delete the staging environment
+argocd app delete postgres-vdb-stage --grpc-web --cascade --yes
+```
+
+### Option 2: Delete via Git + ArgoCD Auto-Prune
+
+Since the ApplicationSet has `automated.prune: true`, you can delete the environment directory from git and let ArgoCD handle the cleanup automatically:
+
+```bash
+# Remove the environment directory
+rm -rf environments/{env-name}
+
+# Commit and push
+git add -A
+git commit -m "Remove {env-name} environment"
+git push
+```
+
+ArgoCD will detect the change within ~3 minutes and automatically:
+1. Delete the Application
+2. Remove all Kubernetes resources
+3. Delete the namespace
+
+### Option 3: Manual Cleanup (If ArgoCD Fails)
+
+If ArgoCD deletion doesn't clean up resources properly, manually remove them:
+
+```bash
+# 1. Delete the PostgresVDB custom resource (triggers operator cleanup)
+kubectl delete postgresvdb {env-name}-vdb -n postgres-vdbs-{env-name}
+
+# 2. Delete the namespace (removes all remaining resources)
+kubectl delete namespace postgres-vdbs-{env-name}
+
+# 3. Delete the ArgoCD Application if it still exists
+kubectl delete application postgres-vdb-{env-name} -n argocd
+```
+
+### Complete Cleanup Procedure
+
+For a thorough cleanup of an environment, follow this checklist:
+
+1. **Delete from ArgoCD** (with cascade):
+   ```bash
+   argocd app delete postgres-vdb-{env-name} --grpc-web --cascade --yes
+   ```
+
+2. **Remove from Git repository**:
+   ```bash
+   cd /path/to/postgresvdb-environments
+   rm -rf environments/{env-name}
+   git add -A
+   git commit -m "Remove {env-name} environment"
+   git push
+   ```
+
+3. **Verify cleanup**:
+   ```bash
+   # Check ArgoCD application is gone
+   argocd app list --grpc-web | grep {env-name}
+   
+   # Check namespace is deleted
+   kubectl get namespace | grep postgres-vdbs-{env-name}
+   
+   # Check no VDB resources remain
+   kubectl get postgresvdb --all-namespaces | grep {env-name}
+   ```
+
+### Troubleshooting Deletion Issues
+
+**If namespace is stuck in "Terminating" state:**
+
+```bash
+# Check for finalizers blocking deletion
+kubectl get namespace postgres-vdbs-{env-name} -o json | jq '.spec.finalizers'
+
+# Force remove finalizers if needed
+kubectl patch namespace postgres-vdbs-{env-name} -p '{"metadata":{"finalizers":[]}}' --type=merge
+```
+
+**If VDB resource won't delete:**
+
+```bash
+# Check VDB finalizers
+kubectl get postgresvdb {env-name}-vdb -n postgres-vdbs-{env-name} -o json | jq '.metadata.finalizers'
+
+# Remove finalizers if needed
+kubectl patch postgresvdb {env-name}-vdb -n postgres-vdbs-{env-name} -p '{"metadata":{"finalizers":[]}}' --type=merge
+```
+
+**If ArgoCD app won't delete:**
+
+```bash
+# Check application finalizers
+kubectl get application postgres-vdb-{env-name} -n argocd -o json | jq '.metadata.finalizers'
+
+# Force delete if stuck
+kubectl patch application postgres-vdb-{env-name} -n argocd -p '{"metadata":{"finalizers":[]}}' --type=merge
+kubectl delete application postgres-vdb-{env-name} -n argocd --force --grace-period=0
+```
+
+### Best Practices for Deletion
+
+1. **Always use `--cascade`** when deleting via ArgoCD CLI to ensure resources are cleaned up
+2. **Backup data first** if the environment contains important data
+3. **Verify deletion** by checking ArgoCD, Kubernetes resources, and git repository
+4. **Document the reason** in the git commit message when removing environments
+5. **Use Git-based deletion** for production environments to maintain audit trail
+
+### Quick Reference Commands
+
+```bash
+# Delete environment (complete cleanup)
+argocd app delete postgres-vdb-{env-name} --grpc-web --cascade --yes
+rm -rf environments/{env-name}
+git add -A && git commit -m "Remove {env-name} environment" && git push
+
+# Verify deletion
+argocd app list --grpc-web | grep {env-name}
+kubectl get namespace | grep postgres-vdbs-{env-name}
+kubectl get postgresvdb --all-namespaces | grep {env-name}
+```
