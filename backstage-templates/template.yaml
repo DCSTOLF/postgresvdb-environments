@@ -137,8 +137,6 @@ spec:
           default:
             - name: max_connections
               value: "20"
-            - name: shared_buffers
-              value: "256MB"
             - name: "shared_buffers"
               value: "1GB"  
             - name: "effective_cache_size"
