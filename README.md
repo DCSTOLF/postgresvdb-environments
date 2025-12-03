@@ -419,6 +419,27 @@ Create the name of the service account to use
 
 ## ArgoCD Configuration
 
+### App-of-Apps Architecture
+
+The platform uses an **App-of-Apps pattern** with the following hierarchy:
+
+```
+postgres-vdb-platform (Application)           ← Root app
+    ↓
+postgres-vdb-appset (ApplicationSet)          ← Manages environments
+    ↓
+├── postgres-vdb-dev (Application)            ← Generated apps
+├── postgres-vdb-qa (Application)
+├── postgres-vdb-feat-123 (Application)
+└── postgres-vdb-{env-name} (Application)
+```
+
+**Key Points:**
+- **Root Application** (`postgres-vdb-platform`) manages the ApplicationSet
+- **ApplicationSet** (`postgres-vdb-appset`) auto-generates environment Applications
+- **Environment Apps** are created automatically from `environments/*/` directories
+- Deleting the root app cascades to ApplicationSet and all generated apps
+
 ### Application of Applications
 
 **applications/app-of-apps.yaml**
@@ -434,9 +455,12 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/your-org/vdb-platform.git
+    repoURL: https://github.com/DCSTOLF/postgresvdb-environments.git
     targetRevision: main
     path: applications
+    directory:
+      recurse: false
+      include: '{applicationset-*.yaml}'
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
@@ -444,8 +468,22 @@ spec:
     automated:
       prune: true
       selfHeal: true
+      allowEmpty: false
     syncOptions:
     - CreateNamespace=true
+    - PrunePropagationPolicy=foreground
+    - PruneLast=true
+```
+
+**Deploy the platform:**
+
+```bash
+# Deploy root application (which deploys ApplicationSet)
+kubectl apply -f applications/app-of-apps.yaml -n argocd
+
+# Verify deployment
+argocd app get postgres-vdb-platform --grpc-web
+argocd app list --grpc-web | grep postgres-vdb
 ```
 
 ### Environment ApplicationSet
@@ -720,6 +758,91 @@ For issues and questions:
 4. Open issues in the project repository
 
 ## Deleting Environments
+
+When you need to remove a PostgreSQL VDB environment, follow these steps to ensure complete cleanup:
+
+### Complete Platform Deletion/Recreation (App-of-Apps)
+
+If you need to **completely delete and recreate all environments** (e.g., to reset the entire platform), use the app-of-apps deletion sequence:
+
+⚠️ **Warning**: This will delete ALL environments (dev, qa, stage, prod, and all feature environments). Use with caution!
+
+#### Full Platform Deletion Procedure
+
+```bash
+# 1. Delete the root Application (postgres-vdb-platform)
+#    This should cascade to the ApplicationSet and all environment apps
+kubectl delete application postgres-vdb-platform -n argocd
+
+# 2. Wait ~30 seconds for cascade deletion, then verify all apps are gone
+argocd app list --grpc-web | grep postgres-vdb
+
+# 3. Verify the ApplicationSet is deleted
+kubectl get applicationset -n argocd | grep postgres-vdb-appset
+
+# 4. If ApplicationSet still exists, delete it manually
+kubectl delete applicationset postgres-vdb-appset -n argocd
+
+# 5. Verify all environment apps are deleted (should show "No resources found")
+argocd app list --grpc-web | grep postgres-vdb
+
+# 6. Manual VDB cleanup (if cascade didn't remove them)
+kubectl get postgresvdb -A
+# For each VDB still present:
+kubectl delete postgresvdb {vdb-name} -n postgres-vdbs-{env-name}
+
+# 7. Manual namespace cleanup (if needed)
+kubectl get namespace | grep postgres-vdbs
+# For each namespace still present:
+kubectl delete namespace postgres-vdbs-{env-name}
+```
+
+#### Full Platform Recreation Procedure
+
+Once all resources are cleaned up, recreate the entire platform:
+
+```bash
+# 1. Apply the app-of-apps (recreates everything)
+kubectl apply -f applications/app-of-apps.yaml -n argocd
+
+# 2. Sync the root application to deploy the ApplicationSet
+argocd app sync postgres-vdb-platform --grpc-web
+
+# 3. Wait ~10 seconds for ApplicationSet to generate environment apps
+sleep 10
+
+# 4. Verify all environment apps are created
+argocd app list --grpc-web
+
+# 5. Monitor VDB provisioning (takes ~7-10 minutes)
+kubectl get postgresvdb -A -w
+```
+
+**Expected Results After Recreation:**
+- `postgres-vdb-platform`: OutOfSync/Healthy (normal - manages ApplicationSet)
+- `postgres-vdb-appset`: Active ApplicationSet generating environment apps
+- `postgres-vdb-dev`, `postgres-vdb-qa`, `postgres-vdb-feat-*`: All Synced/Healthy
+- All VDBs: Status "Ready" after ~7-10 minutes
+
+#### Why This Sequence?
+
+The app-of-apps pattern creates a hierarchy:
+```
+postgres-vdb-platform (Application)
+    └── postgres-vdb-appset (ApplicationSet)
+        ├── postgres-vdb-dev (Application)
+        ├── postgres-vdb-qa (Application)
+        ├── postgres-vdb-feat-123 (Application)
+        └── ... (other environments)
+```
+
+**Key Behaviors:**
+1. **Deleting individual environment apps doesn't work** - the ApplicationSet immediately regenerates them from Git
+2. **Deleting the ApplicationSet stops regeneration** - but you must delete the root app first for proper cascade
+3. **ArgoCD cascade doesn't always reach custom resources** - manual VDB/namespace cleanup often required
+4. **Recreation is simple** - just apply `app-of-apps.yaml` and everything flows from there
+
+### Single Environment Deletion
 
 When you need to remove a PostgreSQL VDB environment, follow these steps to ensure complete cleanup:
 
