@@ -98,43 +98,6 @@ vdb:
       value: "30s"
     - name: "lock_timeout"
       value: "10s"
-  
-  hooks:
-    - name: "init-dev-schema"
-      stage: "post-create"
-      database: "sampledb"
-      script: |
-        -- Create development schemas
-        CREATE SCHEMA IF NOT EXISTS dev_features;
-        CREATE SCHEMA IF NOT EXISTS dev_testing;
-        
-        -- Grant permissions
-        GRANT USAGE ON SCHEMA dev_features TO dev_user;
-        GRANT USAGE ON SCHEMA dev_testing TO dev_user;
-        GRANT CREATE ON SCHEMA dev_features TO dev_user;
-        GRANT CREATE ON SCHEMA dev_testing TO dev_user;
-        
-        -- Create sample testing table
-        CREATE TABLE IF NOT EXISTS dev_testing.test_runs (
-          id SERIAL PRIMARY KEY,
-          test_name VARCHAR(255) NOT NULL,
-          status VARCHAR(50) NOT NULL,
-          duration_ms INTEGER,
-          created_at TIMESTAMP DEFAULT NOW()
-        );
-        
-        GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA dev_testing TO dev_user;
-        GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA dev_testing TO dev_user;
-        
-        -- Create readonly role
-        CREATE ROLE IF NOT EXISTS readonly;
-        GRANT CONNECT ON DATABASE dev_application TO readonly;
-        GRANT USAGE ON SCHEMA dev_features TO readonly;
-        GRANT SELECT ON ALL TABLES IN SCHEMA dev_features TO readonly;
-        
-        -- Log initialization
-        INSERT INTO dev_testing.test_runs (test_name, status, duration_ms) 
-        VALUES ('schema_initialization', 'SUCCESS', 0);
 
 # Monitoring enabled for dev
 monitoring:
