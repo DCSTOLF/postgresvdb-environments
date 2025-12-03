@@ -117,19 +117,24 @@ make install-crds
 
 ### Deploy to ArgoCD
 ```bash
-make deploy-argocd-apps
+kubectl apply -f applications/postgres-vdb-appset.yaml -n argocd
 ```
 
-### Create Feature Environment
+### Create Environment
 ```bash
-./scripts/create-feature-env.sh feat-789-new-api
-# or
+# Via Makefile
+make create-env ENV=staging
 make create-feature FEATURE=feat-789-new-api
+
+# Via Backstage
+# Visit https://backstage.k8s.delphixdemo.com/create
+# Select "PostgreSQL VDB Environment" template
 ```
 
 ### Monitor Status
 ```bash
 make status
+argocd app list --grpc-web
 ```
 
 ### Connect to Database
@@ -165,17 +170,13 @@ make connect-dev
 ### **Custom Resources** (1 file)
 1. `crds/postgresvdb.yaml` - PostgresVDB CRD (280+ lines)
 
-### **Automation Scripts** (2 files)
-1. `scripts/create-feature-env.sh` - Create feature env (250+ lines)
-2. `scripts/cleanup-feature-env.sh` - Cleanup feature env (200+ lines)
-
 ### **Documentation** (3 files)
 1. `README.md` - Complete documentation (900+ lines)
 2. `QUICKSTART.md` - Quick reference (400+ lines)
-3. `ARCHITECTURE.md` - Architecture diagrams (280+ lines)
+3. `ARCHITECTURE.md` - Architecture diagrams (400+ lines)
 
 ### **Project Files** (2 files)
-1. `Makefile` - Automation commands (200+ lines)
+1. `Makefile` - Automation commands (300+ lines)
 2. `.gitignore` - Git ignore patterns
 
 ---

@@ -546,120 +546,62 @@ spec:
           value: "PostgreSQL VDB for feature branch {{path.basename}}"
 ```
 
-## Automation Scripts
-
-### Create Feature Environment
-
-**scripts/create-feature-env.sh**
-
-```bash
-#!/bin/bash
-
-set -e
-
-FEATURE_NAME=$1
-if [ -z "$FEATURE_NAME" ]; then
-    echo "Usage: $0 <feature-name>"
-    exit 1
-fi
-
-# Create values file for feature branch
-cat > "environments/features/values-${FEATURE_NAME}.yaml" << EOF
-environment: feature
-featureBranch: "${FEATURE_NAME}"
-
-vdb:
-  name: "${FEATURE_NAME}-vdb"
-  database:
-    name: "${FEATURE_NAME}_app"
-    user: "${FEATURE_NAME}_user"
-    password: "$(openssl rand -base64 16)"
-  resources:
-    requests:
-      memory: "2Gi"
-      cpu: "1"
-    limits:
-      memory: "4Gi"
-      cpu: "2"
-  hooks:
-    - name: "init-${FEATURE_NAME}-schema"
-      stage: "post-create"
-      database: "${FEATURE_NAME}_app"
-      script: |
-        CREATE SCHEMA IF NOT EXISTS ${FEATURE_NAME}_experimental;
-        GRANT ALL ON SCHEMA ${FEATURE_NAME}_experimental TO ${FEATURE_NAME}_user;
-EOF
-
-echo "Created feature environment configuration for ${FEATURE_NAME}"
-echo "File: environments/features/values-${FEATURE_NAME}.yaml"
-
-# Commit and push to trigger ArgoCD
-git add "environments/features/values-${FEATURE_NAME}.yaml"
-git commit -m "Add feature environment for ${FEATURE_NAME}"
-git push origin main
-
-echo "Feature environment ${FEATURE_NAME} will be provisioned automatically by ArgoCD"
-```
-
-### Cleanup Feature Environment
-
-**scripts/cleanup-feature-env.sh**
-
-```bash
-#!/bin/bash
-
-set -e
-
-FEATURE_NAME=$1
-if [ -z "$FEATURE_NAME" ]; then
-    echo "Usage: $0 <feature-name>"
-    exit 1
-fi
-
-# Remove values file
-rm -f "environments/features/values-${FEATURE_NAME}.yaml"
-
-# Commit and push to trigger cleanup
-git add "environments/features/values-${FEATURE_NAME}.yaml"
-git commit -m "Remove feature environment for ${FEATURE_NAME}"
-git push origin main
-
-echo "Feature environment ${FEATURE_NAME} will be cleaned up automatically by ArgoCD"
-```
-
 ## Usage Examples
 
 ### Manual Helm Deployment
 
 ```bash
 # Deploy development environment
-helm install dev-vdb ./charts/postgres-vdb -f environments/dev.yaml -n postgres-vdbs-dev
+helm install dev-vdb ./charts/postgres-vdb -f environments/dev/values.yaml -n postgres-vdbs-dev
 
 # Deploy QA environment  
-helm install qa-vdb ./charts/postgres-vdb -f environments/qa.yaml -n postgres-vdbs-qa
+helm install qa-vdb ./charts/postgres-vdb -f environments/qa/values.yaml -n postgres-vdbs-qa
 
 # Upgrade with new resources
-helm upgrade dev-vdb ./charts/postgres-vdb -f environments/dev.yaml --set vdb.resources.requests.memory=2Gi -n postgres-vdbs-dev
+helm upgrade dev-vdb ./charts/postgres-vdb -f environments/dev/values.yaml --set vdb.resources.requests.memory=2Gi -n postgres-vdbs-dev
 
 # Check status
 helm list -n postgres-vdbs-dev
 kubectl get postgresvdbs -n postgres-vdbs-dev
 ```
 
-### Create Feature Branch Environment
+### Create Environment via Makefile
 
 ```bash
-# Make script executable
-chmod +x scripts/create-feature-env.sh
+# Create a new environment (staging, prod, etc.)
+make create-env ENV=staging
 
-# Create feature environment
-./scripts/create-feature-env.sh feat-123-new-ui
+# Or create a feature environment
+make create-feature FEATURE=feat-123-new-ui
 
-# Check ArgoCD application
-argocd app get postgres-vdb-feat-123-new-ui
+# Review the generated values.yaml file
+cat environments/staging/values.yaml
 
-# Check VDB status
-kubectl get postgresvdb -n postgres-vdbs-feature-feat-123-new-ui
+# Commit and push to trigger ArgoCD deployment
+git add environments/staging/
+git commit -m "Add staging environment"
+git push
+
+# Monitor deployment
+argocd app get postgres-vdb-staging --grpc-web
+kubectl get postgresvdb -n postgres-vdbs-staging
+```
+
+### Delete Environment via Makefile
+
+```bash
+# Delete any environment (with confirmation prompt)
+make delete-env ENV=staging
+
+# Delete feature environment
+make cleanup-feature FEATURE=feat-123-new-ui
+
+# This will:
+# 1. Warn and wait 5 seconds
+# 2. Delete ArgoCD app with --cascade
+# 3. Force cleanup stuck resources if needed
+# 4. Remove environment directory from git
+# 5. Provide verification commands
 ```
 
 ### Database Connection
