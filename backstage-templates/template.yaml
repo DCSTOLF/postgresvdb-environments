@@ -73,7 +73,7 @@ spec:
           type: string
           description: PostgreSQL password
           default: Delphix_123!
-          ui:widget: password
+          ui:field: Secret
     
     - title: Resource Configuration
       required:
@@ -100,9 +100,9 @@ spec:
           enum:
             - 250m
             - 500m
-            - 1
-            - 2
-            - 4
+            - "1"
+            - "2"
+            - "4"
         
         memoryLimit:
           title: Memory Limit
@@ -120,13 +120,13 @@ spec:
           title: CPU Limit
           type: string
           description: CPU limit for the database pod
-          default: 1
+          default: "1"
           enum:
             - 500m
-            - 1
-            - 2
-            - 4
-            - 8
+            - "1"
+            - "2"
+            - "4"
+            - "8"
     
     - title: PostgreSQL Configuration
       properties:
