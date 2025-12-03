@@ -182,8 +182,7 @@ Developer     Script            Git Repo        ArgoCD         Kubernetes
 ```
 postgresvdb-environments/
 │
-├── README.md                       # Project overview and documentation
-├── DEPLOY.md                       # Detailed deployment instructions
+├── README.md                       # Project overview and complete documentation
 ├── QUICKSTART.md                   # Quick reference guide
 ├── Makefile                        # Automation commands
 ├── .gitignore                      # Git ignore patterns

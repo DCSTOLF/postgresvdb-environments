@@ -42,9 +42,8 @@ postgresvdb-environments/
 │   └── cleanup-feature-env.sh
 │
 ├── ARCHITECTURE.md                # Architecture diagrams and design
-├── DEPLOY.md                      # Detailed deployment guide
 ├── QUICKSTART.md                  # Quick reference guide
-├── README.md                      # Project overview
+├── README.md                      # Complete project documentation
 ├── Makefile                       # Automation commands
 └── .gitignore                     # Git ignore patterns
 ```
@@ -97,11 +96,10 @@ postgresvdb-environments/
 - ✅ Monitoring and troubleshooting helpers
 
 ### 7. **Documentation**
-- ✅ **README.md**: Comprehensive project overview with examples
-- ✅ **DEPLOY.md**: Step-by-step deployment instructions (600+ lines)
+- ✅ **README.md**: Comprehensive project documentation with deployment, usage, and troubleshooting (900+ lines)
 - ✅ **QUICKSTART.md**: Quick reference for common tasks
 - ✅ **ARCHITECTURE.md**: System architecture with ASCII diagrams
-- ✅ Troubleshooting guides and best practices
+- ✅ Complete troubleshooting guides and best practices
 
 ---
 
@@ -171,11 +169,10 @@ make connect-dev
 1. `scripts/create-feature-env.sh` - Create feature env (250+ lines)
 2. `scripts/cleanup-feature-env.sh` - Cleanup feature env (200+ lines)
 
-### **Documentation** (4 files)
-1. `README.md` - Project overview (550+ lines)
-2. `DEPLOY.md` - Deployment guide (650+ lines)
-3. `QUICKSTART.md` - Quick reference (120+ lines)
-4. `ARCHITECTURE.md` - Architecture diagrams (280+ lines)
+### **Documentation** (3 files)
+1. `README.md` - Complete documentation (900+ lines)
+2. `QUICKSTART.md` - Quick reference (400+ lines)
+3. `ARCHITECTURE.md` - Architecture diagrams (280+ lines)
 
 ### **Project Files** (2 files)
 1. `Makefile` - Automation commands (200+ lines)
@@ -385,7 +382,7 @@ To extend this platform:
 ## 📞 Support
 
 For issues and questions:
-- Review `DEPLOY.md` for troubleshooting
+- Review `README.md` for comprehensive documentation and troubleshooting
 - Check `QUICKSTART.md` for common tasks
 - Review `ARCHITECTURE.md` for system design
 - Consult ArgoCD documentation
