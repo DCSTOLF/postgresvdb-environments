@@ -1,0 +1,12 @@
+apiVersion: backstage.io/v1alpha1
+kind: Location
+metadata:
+  name: postgres-vdb-templates
+  description: Software templates for PostgreSQL VDB self-service provisioning
+  annotations:
+    backstage.io/managed-by-location: url:https://github.com/DCSTOLF/postgresvdb-environments/blob/main/template-location.yaml
+    backstage.io/managed-by-origin-location: url:https://github.com/DCSTOLF/postgresvdb-environments/blob/main/template-location.yaml
+spec:
+  type: url
+  targets:
+    - https://github.com/DCSTOLF/postgresvdb-environments/blob/main/backstage-templates/template.yaml
