@@ -1,0 +1,23 @@
+apiVersion: core.delphix.com/v1alpha1
+kind: PostgresVDB
+metadata:
+  name: devvdb
+  namespace: default
+spec:
+  source:
+    type: dct-source
+    reference: "10.0.1.54:largedb"
+  port: 5432
+  image: "postgres:16.9"
+  mountPath: "/mnt/postgres"  # PVC will be mounted here, PGDATA will be /mnt/postgres/data
+  database:
+    name: "postgres"
+    user: "postgres"
+    password: "postgres"
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "1Gi"
+      cpu: "1"
