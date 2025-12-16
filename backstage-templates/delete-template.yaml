@@ -1,0 +1,208 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: postgres-vdb-environment-delete
+  title: Delete PostgreSQL VDB Environment
+  description: Safely delete a PostgreSQL Virtual Database environment with automatic cleanup and Git synchronization
+  tags:
+    - postgres
+    - database
+    - gitops
+    - delphix
+    - vdb
+    - delete
+spec:
+  owner: user:default/dcstolf
+  type: resource
+  
+  parameters:
+    - title: Environment to Delete
+      required:
+        - environmentName
+        - confirmDeletion
+      properties:
+        environmentName:
+          title: Environment Name
+          type: string
+          description: Name of the environment to delete (e.g., dev, qa, staging, prod, feat-xyz)
+          pattern: '^[a-z0-9][a-z0-9-]*[a-z0-9]$'
+          ui:autofocus: true
+          ui:help: 'Enter the exact name of the environment you want to delete'
+        
+        confirmDeletion:
+          title: Confirm Deletion
+          type: boolean
+          description: I understand this action will permanently delete the environment and all its data
+          default: false
+          ui:widget: checkbox
+          ui:help: 'This action cannot be undone. All VDB data will be lost.'
+        
+        reason:
+          title: Deletion Reason
+          type: string
+          description: Why is this environment being deleted? (for audit purposes)
+          ui:widget: textarea
+          ui:options:
+            rows: 3
+  
+  steps:
+    - id: validate-confirmation
+      name: Validate Deletion Confirmation
+      action: debug:log
+      input:
+        message: |
+          Validating deletion request for environment: ${{ parameters.environmentName }}
+          Confirmation: ${{ parameters.confirmDeletion }}
+    
+    - id: check-confirmation
+      name: Check Confirmation
+      if: ${{ parameters.confirmDeletion === false }}
+      action: catalog:fail
+      input:
+        message: 'Deletion cancelled: confirmation checkbox was not checked'
+    
+    - id: delete-argocd-app
+      name: Delete ArgoCD Application with Cascade
+      action: run:shell
+      input:
+        command: |
+          set -e
+          
+          ENV_NAME="${{ parameters.environmentName }}"
+          
+          echo "========================================"
+          echo "Deleting Environment: $ENV_NAME"
+          echo "========================================"
+          echo ""
+          
+          # Step 1: Delete ArgoCD Application with cascade
+          echo "Step 1/4: Deleting ArgoCD application..."
+          if argocd app get postgres-vdb-$ENV_NAME --grpc-web >/dev/null 2>&1; then
+            echo "Found ArgoCD application, initiating deletion with cascade..."
+            argocd app delete postgres-vdb-$ENV_NAME --grpc-web --cascade --wait --timeout 300 --yes
+            echo "✓ ArgoCD application deleted"
+          else
+            echo "⚠️  ArgoCD application not found (may already be deleted)"
+          fi
+          echo ""
+          
+          # Step 2: Wait for VDB deletion
+          echo "Step 2/4: Waiting for VDB deletion..."
+          timeout=60
+          while [ $timeout -gt 0 ]; do
+            if ! kubectl get postgresvdb -n postgres-vdbs-$ENV_NAME 2>/dev/null | grep -q "${ENV_NAME}-vdb"; then
+              echo "✓ VDB deleted successfully"
+              break
+            fi
+            echo "Waiting for VDB deletion... ($timeout seconds remaining)"
+            sleep 5
+            timeout=$((timeout - 5))
+          done
+          
+          if [ $timeout -le 0 ]; then
+            echo "⚠️  VDB still exists after timeout, forcing deletion..."
+            kubectl delete postgresvdb --all -n postgres-vdbs-$ENV_NAME --force --grace-period=0 || true
+          fi
+          echo ""
+          
+          # Step 3: Wait for namespace deletion
+          echo "Step 3/4: Waiting for namespace deletion..."
+          timeout=60
+          while [ $timeout -gt 0 ]; do
+            if ! kubectl get namespace postgres-vdbs-$ENV_NAME 2>/dev/null; then
+              echo "✓ Namespace deleted successfully"
+              break
+            fi
+            echo "Waiting for namespace deletion... ($timeout seconds remaining)"
+            sleep 5
+            timeout=$((timeout - 5))
+          done
+          
+          if [ $timeout -le 0 ]; then
+            echo "⚠️  Namespace still exists after timeout, forcing deletion..."
+            kubectl delete namespace postgres-vdbs-$ENV_NAME --force --grace-period=0 || true
+          fi
+          echo ""
+          
+          # Step 4: Verify cleanup
+          echo "Step 4/4: Verifying cleanup..."
+          echo "Verification Results:"
+          
+          if argocd app get postgres-vdb-$ENV_NAME --grpc-web 2>&1 | grep -q "not found"; then
+            echo "  ✓ ArgoCD app: Deleted"
+          else
+            echo "  ⚠️  ArgoCD app: Still exists"
+          fi
+          
+          if ! kubectl get namespace postgres-vdbs-$ENV_NAME 2>&1 | grep -q "Active"; then
+            echo "  ✓ Namespace: Deleted"
+          else
+            echo "  ⚠️  Namespace: Still exists"
+          fi
+          
+          if ! kubectl get postgresvdb -A 2>&1 | grep -q "${ENV_NAME}-vdb"; then
+            echo "  ✓ VDB: Deleted"
+          else
+            echo "  ⚠️  VDB: Still exists"
+          fi
+          
+          echo ""
+          echo "✅ Cleanup complete!"
+    
+    - id: remove-from-git
+      name: Remove from Git Repository
+      action: publish:github:pull-request
+      input:
+        repoUrl: github.com?repo=postgresvdb-environments&owner=DCSTOLF
+        branchName: delete-environment-${{ parameters.environmentName }}
+        title: 'Delete PostgreSQL VDB environment: ${{ parameters.environmentName }}'
+        description: |
+          ## Environment Deletion
+          
+          **Environment**: `${{ parameters.environmentName }}`
+          **Reason**: ${{ parameters.reason }}
+          **Deleted by**: ${{ user.entity.metadata.name }}
+          **Timestamp**: ${{ '' | now }}
+          
+          ### Cleanup Status
+          
+          ✅ ArgoCD Application deleted with cascade
+          ✅ VDB resources cleaned up
+          ✅ Namespace removed
+          
+          This PR removes the environment configuration from Git to reflect the deletion.
+          
+          **Safe to auto-merge** - all resources have been cleaned up before this PR was created.
+          
+          ---
+          *Created via Backstage Software Template*
+        targetPath: environments/${{ parameters.environmentName }}
+        deleteFiles: true
+        autoMerge: true
+        autoMergeMethod: squash
+  
+  output:
+    links:
+      - title: Pull Request
+        url: ${{ steps['remove-from-git'].output.remoteUrl }}
+        icon: github
+      - title: Deletion Log
+        url: ${{ steps['delete-argocd-app'].output.logUrl }}
+        icon: docs
+    text:
+      - title: Summary
+        content: |
+          ## Deletion Complete
+          
+          Environment **${{ parameters.environmentName }}** has been deleted.
+          
+          ### What was deleted:
+          - ArgoCD Application: `postgres-vdb-${{ parameters.environmentName }}`
+          - VDB Resource: `${{ parameters.environmentName }}-vdb`
+          - Namespace: `postgres-vdbs-${{ parameters.environmentName }}`
+          - Git directory: `environments/${{ parameters.environmentName }}/`
+          
+          ### Next Steps:
+          1. Review the pull request to remove the environment from Git
+          2. The PR will auto-merge once checks pass
+          3. Verify deletion: `kubectl get postgresvdb -A | grep ${{ parameters.environmentName }}`

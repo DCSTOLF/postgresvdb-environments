@@ -3,11 +3,12 @@ kind: Location
 metadata:
   name: postgres-vdb-templates
   title: PostgreSQL VDB Templates
-  description: Software templates for creating PostgreSQL VDB environments
+  description: Software templates for creating and deleting PostgreSQL VDB environments
 spec:
   type: url
   targets:
     - ./backstage-templates/template.yaml
+    - ./backstage-templates/delete-template.yaml
 ---
 apiVersion: backstage.io/v1alpha1
 kind: Component
