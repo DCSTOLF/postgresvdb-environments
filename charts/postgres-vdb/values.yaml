@@ -21,6 +21,9 @@ vdb:
   mode: "Primary"
   errorBackoffPeriod: "5m"
   
+  # Enable pre-delete cleanup hook to ensure resources are deleted before Application removal
+  enablePreDeleteCleanup: true
+  
   # Database credentials (override per environment)
   database:
     name: "postgres"
