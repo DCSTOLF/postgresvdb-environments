@@ -40,6 +40,8 @@ spec:
         argocd.argoproj.io/sync-options: "PruneLast=true"
         argocd.argoproj.io/compare-options: "IgnoreExtraneous"
         argocd.argoproj.io/manifest-generate-paths: "environments/{{.path.basename}}/values.yaml"
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
     
     spec:
       project: default
