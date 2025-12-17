@@ -72,11 +72,19 @@ spec:
       input:
         url: https://github.com/DCSTOLF/postgresvdb-environments
     
-    - id: delete-files
-      name: Delete Environment Files
-      action: roadiehq:utils:fs:remove
+    - id: delete-values-file
+      name: Delete values.yaml
+      action: fs:delete
       input:
-        path: environments/${{ parameters.environmentName }}
+        files:
+          - environments/${{ parameters.environmentName }}/values.yaml
+    
+    - id: delete-environment-dir
+      name: Delete Environment Directory
+      action: fs:delete
+      input:
+        files:
+          - environments/${{ parameters.environmentName }}
     
     - id: create-pr
       name: Create Pull Request
