@@ -24,15 +24,15 @@ spec:
         environmentName:
           title: Environment Name
           type: string
-          description: Select the environment to delete from the list of existing environments
+          description: Select the environment to delete from the list of active ArgoCD applications
           ui:field: SelectFieldFromApi
           ui:options:
             title: Select Environment
-            description: Choose from existing environments in the repository
-            path: 'proxy/github/api/repos/DCSTOLF/postgresvdb-environments/contents/environments'
-            arraySelector: '.'
-            valueSelector: 'name'
-            labelSelector: 'name'
+            description: Choose from currently deployed environments
+            path: 'proxy/argocd/api/v1/applicationsets/postgres-vdb-appset'
+            arraySelector: 'status.resources'
+            valueSelector: 'metadata.labels.environment'
+            labelSelector: 'metadata.labels.environment'
         
         confirmDeletion:
           title: Confirm Deletion
