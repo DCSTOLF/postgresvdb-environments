@@ -24,10 +24,15 @@ spec:
         environmentName:
           title: Environment Name
           type: string
-          description: Name of the environment to delete (e.g., dev, qa, staging, prod, feat-xyz)
-          pattern: '^[a-z0-9][a-z0-9-]*[a-z0-9]$'
-          ui:autofocus: true
-          ui:help: 'Enter the exact name of the environment you want to delete'
+          description: Name of the environment to delete
+          ui:field: SelectFieldFromApi
+          ui:options:
+            title: Select Environment
+            description: Choose from existing environments in the repository
+            path: 'proxy/github/api/repos/DCSTOLF/postgresvdb-environments/contents/environments'
+            arraySelector: '.'
+            valueSelector: 'name'
+            labelSelector: 'name'
         
         confirmDeletion:
           title: Confirm Deletion
