@@ -1,0 +1,55 @@
+environment: feat-456
+
+vdb:
+  name: "feat-456-vdb"
+  database:
+    name: "postgres"
+    user: "postgres"
+    password: "***********"
+  resources:
+    requests:
+      memory: "4Gi"
+      cpu: "2"
+    limits:
+      memory: "8Gi"
+      cpu: "4"
+  
+  # PostgreSQL configuration
+  postgresConfig:
+    - name: "listen_addresses"
+      value: "'*'"
+    - name: "max_connections"
+      value: "20"
+    - name: "shared_buffers"
+      value: "1GB"
+    - name: "effective_cache_size"
+      value: "3GB"
+    - name: "work_mem"
+      value: "32MB"
+    - name: "maintenance_work_mem"
+      value: "256MB"
+    - name: "temp_buffers"
+      value: "4MB"
+    - name: "max_worker_processes"
+      value: "2"
+    - name: "max_parallel_workers_per_gather"
+      value: "1"
+    - name: "max_parallel_maintenance_workers"
+      value: "1"
+    - name: "max_parallel_workers"
+      value: "2"
+    - name: "wal_buffers"
+      value: "16MB"
+
+# Monitoring configuration
+monitoring:
+  enabled: false
+  
+
+# Service configuration
+service:
+  public: false
+  
+  labels:
+    environment: "feat-456"
+    type: "feature"
