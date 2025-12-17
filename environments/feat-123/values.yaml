@@ -1,0 +1,115 @@
+environment: feature
+featureBranch: "feat-123"
+
+vdb:
+  name: "feat-123-vdb"
+  database:
+    name: "postgres"
+    user: "postgres"
+    password: "Delphix_123!"
+  
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1"
+  
+  # PostgreSQL configuration optimized for feature branch (1Gi memory, 0.5 CPU)
+  postgresConfig:
+    - name: "listen_addresses"
+      value: "'*'"
+    - name: "max_connections"
+      value: "15"
+    - name: "shared_buffers"
+      value: "256MB"
+    - name: "effective_cache_size"
+      value: "768MB"
+    - name: "work_mem"
+      value: "4MB"
+    - name: "maintenance_work_mem"
+      value: "64MB"
+    - name: "temp_buffers"
+      value: "4MB"
+    - name: "dynamic_shared_memory_type"
+      value: "posix"
+    - name: "bgwriter_delay"
+      value: "500ms"
+    - name: "bgwriter_lru_maxpages"
+      value: "100"
+    - name: "bgwriter_lru_multiplier"
+      value: "2.0"
+    - name: "bgwriter_flush_after"
+      value: "256kB"
+    - name: "max_worker_processes"
+      value: "2"
+    - name: "max_parallel_workers_per_gather"
+      value: "0"
+    - name: "max_parallel_maintenance_workers"
+      value: "0"
+    - name: "max_parallel_workers"
+      value: "1"
+    - name: "wal_level"
+      value: "minimal"
+    - name: "wal_sync_method"
+      value: "open_datasync"
+    - name: "full_page_writes"
+      value: "on"
+    - name: "wal_compression"
+      value: "lz4"
+    - name: "wal_buffers"
+      value: "4MB"
+    - name: "wal_writer_delay"
+      value: "10ms"
+    - name: "wal_writer_flush_after"
+      value: "256kB"
+    - name: "commit_siblings"
+      value: "3"
+    - name: "checkpoint_timeout"
+      value: "30min"
+    - name: "checkpoint_completion_target"
+      value: "0.9"
+    - name: "max_wal_size"
+      value: "1GB"
+    - name: "min_wal_size"
+      value: "256MB"
+    - name: "max_wal_senders"
+      value: "0"
+    - name: "log_min_duration_statement"
+      value: "5000"
+    - name: "log_checkpoints"
+      value: "on"
+    - name: "autovacuum"
+      value: "on"
+    - name: "autovacuum_max_workers"
+      value: "1"
+    - name: "autovacuum_vacuum_scale_factor"
+      value: "0.2"
+    - name: "autovacuum_analyze_scale_factor"
+      value: "0.1"
+    - name: "autovacuum_vacuum_cost_delay"
+      value: "20ms"
+    - name: "autovacuum_vacuum_cost_limit"
+      value: "500"
+    - name: "max_locks_per_transaction"
+      value: "64"
+    - name: "idle_in_transaction_session_timeout"
+      value: "10min"
+    - name: "statement_timeout"
+      value: "30s"
+    - name: "lock_timeout"
+      value: "10s"
+
+# Monitoring for feature branch
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: false
+
+# Service configuration
+service:
+  type: ClusterIP
+  annotations:
+    feature.branch: "feat-123"
+    feature.expires: "30d"

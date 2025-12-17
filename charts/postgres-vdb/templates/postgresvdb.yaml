@@ -12,7 +12,6 @@ metadata:
     {{- end }}
   annotations:
     "argocd.argoproj.io/sync-wave": "{{ .Values.syncWave | default "0" }}"
-    "helm.sh/resource-policy": keep
 spec:
   source:
     type: dct-source
