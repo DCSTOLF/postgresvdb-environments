@@ -24,16 +24,15 @@ spec:
         environmentName:
           title: Environment Name
           type: string
-          description: Select the environment you want to delete. Type to filter the list.
-          enum:
-            - dev
-            - qa
-            - feat-123
-          ui:autofocus: true
-          ui:widget: select
+          description: Select the environment to delete from the list of existing environments
+          ui:field: SelectFieldFromApi
           ui:options:
-            allowCustomValue: true
-          ui:help: 'Select from the list or type a custom environment name'
+            title: Select Environment
+            description: Choose from existing environments in the repository
+            path: 'proxy/github/api/repos/DCSTOLF/postgresvdb-environments/contents/environments'
+            arraySelector: '.'
+            valueSelector: 'name'
+            labelSelector: 'name'
         
         confirmDeletion:
           title: Confirm Deletion
