@@ -229,7 +229,7 @@ endif
 	@echo "  VDB:        $$(kubectl get postgresvdb -A 2>&1 | grep -q '$(FEATURE)-vdb' && echo 'Still exists ⚠️' || echo 'Deleted ✓')"
 
 .PHONY: delete-env
-delete-env: ## Delete an environment completely (usage: make delete-env ENV=stage)
+delete-env: ## Delete an environment completely via GitOps (usage: make delete-env ENV=stage)
 ifndef ENV
 	@echo "Error: ENV variable is required"
 	@echo "Usage: make delete-env ENV=stage"
@@ -239,59 +239,29 @@ endif
 	@echo "Press Ctrl+C to cancel, or wait 5 seconds to continue..."
 	@sleep 5
 	@echo ""
-	@echo "Step 1/4: Deleting ArgoCD application with cascade..."
-	@argocd app delete postgres-vdb-$(ENV) --grpc-web --cascade --wait --timeout 300 2>/dev/null || \
-		(echo "⚠️  ArgoCD app not found or already deleted" && exit 0)
-	@echo "✓ ArgoCD application deleted"
-	@echo ""
-	@echo "Step 2/4: Waiting for VDB deletion to complete..."
-	@timeout=60; \
-	while [ $$timeout -gt 0 ]; do \
-		if ! kubectl get postgresvdb -n postgres-vdbs-$(ENV) 2>/dev/null | grep -q $(ENV)-vdb; then \
-			echo "✓ VDB deleted successfully"; \
-			break; \
-		fi; \
-		echo "Waiting for VDB deletion... ($$timeout seconds remaining)"; \
-		sleep 5; \
-		timeout=$$((timeout - 5)); \
-	done; \
-	if [ $$timeout -le 0 ]; then \
-		echo "⚠️  VDB still exists after timeout, forcing deletion..."; \
-		kubectl delete postgresvdb --all -n postgres-vdbs-$(ENV) --force --grace-period=0 || true; \
-	fi
-	@echo ""
-	@echo "Step 3/4: Waiting for namespace deletion to complete..."
-	@timeout=60; \
-	while [ $$timeout -gt 0 ]; do \
-		if ! kubectl get namespace postgres-vdbs-$(ENV) 2>/dev/null; then \
-			echo "✓ Namespace deleted successfully"; \
-			break; \
-		fi; \
-		echo "Waiting for namespace deletion... ($$timeout seconds remaining)"; \
-		sleep 5; \
-		timeout=$$((timeout - 5)); \
-	done; \
-	if [ $$timeout -le 0 ]; then \
-		echo "⚠️  Namespace still exists after timeout, forcing deletion..."; \
-		kubectl delete namespace postgres-vdbs-$(ENV) --force --grace-period=0 || true; \
-	fi
-	@echo ""
-	@echo "Step 4/4: Removing environment directory from git..."
+	@echo "Removing environment directory from Git and pushing..."
 	@if [ -d "environments/$(ENV)" ]; then \
 		git rm -rf environments/$(ENV) && \
-		git commit -m "Remove $(ENV) environment (cleaned up)" && \
+		git commit -m "Remove $(ENV) environment" && \
 		git push && \
 		echo "✓ Environment removed from Git and pushed"; \
 	else \
-		echo "⚠️  Environment directory not found, skipping Git cleanup"; \
+		echo "⚠️  Environment directory not found"; \
+		exit 1; \
 	fi
 	@echo ""
-	@echo "✅ Environment deletion complete!"
+	@echo "✅ Deletion initiated!"
 	@echo ""
-	@echo "Verification:"
-	@echo "  ArgoCD app: $$(argocd app get postgres-vdb-$(ENV) --grpc-web 2>&1 | grep -q 'not found' && echo 'Deleted ✓' || echo 'Still exists ⚠️')"
-	@echo "  Namespace:  $$(kubectl get namespace postgres-vdbs-$(ENV) 2>&1 | grep -q 'NotFound' && echo 'Deleted ✓' || echo 'Still exists ⚠️')"
-	@echo "  VDB:        $$(kubectl get postgresvdb -A 2>&1 | grep -q '$(ENV)-vdb' && echo 'Still exists ⚠️' || echo 'Deleted ✓')"
+	@echo "ArgoCD ApplicationSet will automatically:"
+	@echo "  1. Detect the directory removal (within 3-10 seconds)"
+	@echo "  2. Prune the Application CR"
+	@echo "  3. Trigger cascade deletion of all resources (VDB, Secrets, etc.)"
+	@echo "  4. Clean up the namespace"
+	@echo ""
+	@echo "Monitor deletion progress with:"
+	@echo "  kubectl get application postgres-vdb-$(ENV) -n argocd"
+	@echo "  kubectl get postgresvdb -n postgres-vdbs-$(ENV)"
+	@echo "  kubectl get namespace postgres-vdbs-$(ENV)"
 
 .PHONY: list-vdbs
 list-vdbs: ## List all PostgresVDB resources
