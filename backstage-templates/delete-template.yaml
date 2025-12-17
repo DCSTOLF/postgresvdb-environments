@@ -66,19 +66,17 @@ spec:
       input:
         message: 'Deletion cancelled: confirmation checkbox was not checked'
     
-    - id: fetch-repo
+    - id: fetch-base
       name: Fetch Repository
       action: fetch:plain
       input:
         url: https://github.com/DCSTOLF/postgresvdb-environments
-        targetPath: ./repo
     
-    - id: delete-environment
-      name: Delete Environment Directory
-      action: fs:delete
+    - id: delete-files
+      name: Delete Environment Files
+      action: roadiehq:utils:fs:remove
       input:
-        files:
-          - ./repo/environments/${{ parameters.environmentName }}
+        path: environments/${{ parameters.environmentName }}
     
     - id: create-pr
       name: Create Pull Request
@@ -120,7 +118,6 @@ spec:
           *Created via Backstage Software Template*
           
           **⚠️  Review carefully before merging** - This will trigger automatic deletion of all environment resources.
-        sourcePath: ./repo
   
   output:
     links:
