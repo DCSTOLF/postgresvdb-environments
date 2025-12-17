@@ -66,8 +66,22 @@ spec:
       input:
         message: 'Deletion cancelled: confirmation checkbox was not checked'
     
-    - id: remove-from-git
-      name: Remove Environment from Git
+    - id: fetch-repo
+      name: Fetch Repository
+      action: fetch:plain
+      input:
+        url: https://github.com/DCSTOLF/postgresvdb-environments
+        targetPath: ./repo
+    
+    - id: delete-environment
+      name: Delete Environment Directory
+      action: fs:delete
+      input:
+        files:
+          - ./repo/environments/${{ parameters.environmentName }}
+    
+    - id: create-pr
+      name: Create Pull Request
       action: publish:github:pull-request
       input:
         repoUrl: github.com?repo=postgresvdb-environments&owner=DCSTOLF
@@ -106,15 +120,12 @@ spec:
           *Created via Backstage Software Template*
           
           **⚠️  Review carefully before merging** - This will trigger automatic deletion of all environment resources.
-        targetPath: environments/${{ parameters.environmentName }}
-        deleteFiles: true
-        autoMerge: false
-        commitMessage: 'Remove ${{ parameters.environmentName }} environment'
+        sourcePath: ./repo
   
   output:
     links:
       - title: Pull Request
-        url: ${{ steps['remove-from-git'].output.remoteUrl }}
+        url: ${{ steps['create-pr'].output.remoteUrl }}
         icon: github
     text:
       - title: Summary
@@ -124,9 +135,8 @@ spec:
           A pull request has been created to remove the **${{ parameters.environmentName }}** environment from Git.
           
           ### PR Details:
-          - **URL**: ${{ steps['remove-from-git'].output.remoteUrl }}
+          - **URL**: ${{ steps['create-pr'].output.remoteUrl }}
           - **Branch**: `delete-environment-${{ parameters.environmentName }}`
-          - **Auto-merge**: Disabled (manual review required)
           
           ### What happens next:
           
