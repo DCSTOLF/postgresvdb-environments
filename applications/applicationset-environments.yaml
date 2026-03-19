@@ -18,7 +18,6 @@ spec:
       directories:
       - path: environments/*
         exclude: false
-        pathRegex: "^environments/(dev|qa|stage|prod|feat-[a-zA-Z0-9-]+)$"
   
   template:
     metadata:
@@ -95,14 +94,6 @@ spec:
         - /metadata/generation
         - /metadata/uid
         - /metadata/managedFields
-      
-      # Health check customization
-      healthChecks:
-      - group: core.delphix.com
-        kind: PostgresVDB
-        name: "{{.path.basename}}-vdb"
-        namespace: "postgres-vdbs-{{.path.basename}}"
-        syncTimeoutSeconds: 600
       
       info:
         - name: description
